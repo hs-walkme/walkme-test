@@ -3,23 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer CRM - Dummy Data Edition</title>
+    <title>Enterprise CRM V8 - Advanced Mock</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --cy-orange: #ff9800;
-            --cy-blue: #00a1e9;
-            --cy-bg: #f7f9fa;
-            --cy-border: #e3e7e8;
-        }
+        :root { --cy-orange: #ff9800; --cy-blue: #00a1e9; --cy-bg: #f7f9fa; --cy-border: #e3e7e8; }
         body { background-color: var(--cy-bg); }
         .cy-header { background-color: #333; color: white; }
-        .cy-nav-item { border-bottom: 4px solid transparent; transition: all 0.2s; }
+        .cy-nav-item { border-bottom: 4px solid transparent; }
         .cy-nav-item.active { border-bottom-color: var(--cy-orange); color: var(--cy-orange); font-weight: bold; }
         .btn-cy-primary { background-color: var(--cy-blue); color: white; border-radius: 4px; }
         .btn-cy-primary:hover { background-color: #008ccb; }
         .cy-table-header { background-color: #f2f2f2; border-bottom: 2px solid var(--cy-border); }
         .required::after { content: " *"; color: #e74c3c; font-weight: bold; }
+        input:disabled, select:disabled, textarea:disabled { background-color: #f0f0f0; cursor: not-allowed; }
         .success-pop { animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
@@ -29,27 +25,21 @@
     <header class="cy-header p-2 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-4">
             <div class="bg-orange-500 p-1 rounded font-bold text-white text-xs">CRM</div>
-            <h1 class="font-bold text-base tracking-tight">顧客管理システム（トレーニング用）</h1>
+            <h1 class="font-bold text-base">顧客管理システム V8</h1>
         </div>
         <div class="flex items-center space-x-4">
-            <div class="relative">
-                <input type="text" data-i18n-placeholder="search_placeholder" class="bg-gray-700 text-white text-[10px] rounded px-8 py-1.5 focus:bg-white focus:text-gray-800 outline-none w-64 transition-all">
-                <span class="absolute left-2 top-1.5 opacity-50 text-xs">🔍</span>
-            </div>
             <select onchange="changeLanguage(this.value)" id="lang-selector" class="bg-transparent border border-gray-500 text-white text-[10px] rounded px-2 py-1 outline-none">
                 <option value="ja" class="text-black">日本語 (JP)</option>
                 <option value="en" class="text-black">English (EN)</option>
             </select>
-            <div class="flex items-center space-x-2 border-l border-gray-600 pl-4">
-                <div class="w-7 h-7 bg-blue-500 rounded-md flex items-center justify-center text-[10px] font-bold uppercase">Admin</div>
-            </div>
+            <div class="w-7 h-7 bg-blue-500 rounded-md flex items-center justify-center text-[10px] font-bold">USR</div>
         </div>
     </header>
 
-    <nav class="bg-white border-b border-gray-200 flex space-x-10 px-10 text-xs">
+    <nav class="bg-white border-b flex space-x-10 px-10 text-xs">
         <button onclick="switchTab('home')" id="tab-home" class="cy-nav-item py-4 active" data-i18n="nav_home">ポータル</button>
-        <button onclick="switchTab('accounts')" id="tab-accounts" class="cy-nav-item py-4" data-i18n="nav_accounts">取引先一覧</button>
-        <button onclick="switchTab('opps')" id="tab-opps" class="cy-nav-item py-4" data-i18n="nav_opps">商談管理</button>
+        <button onclick="switchTab('accounts')" id="tab-accounts" class="cy-nav-item py-4" data-i18n="nav_accounts">取引先</button>
+        <button onclick="switchTab('opps')" id="tab-opps" class="cy-nav-item py-4" data-i18n="nav_opps">商談</button>
     </nav>
 
     <main class="p-6 max-w-[1400px] mx-auto">
@@ -57,114 +47,150 @@
         <div id="view-accounts" class="hidden">
             <div class="bg-white p-6 rounded shadow-sm border border-gray-200">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-bold flex items-center" data-i18n="acc_title">
-                        <span class="w-1.5 h-6 bg-blue-500 mr-3 inline-block"></span>取引先一覧
-                    </h2>
-                    <button onclick="openModal('modal-account')" id="btn-new-account" class="btn-cy-primary px-5 py-2 font-bold shadow-sm" data-i18n="btn_new_acc">+ 新規レコード追加</button>
+                    <h2 class="text-lg font-bold" data-i18n="acc_title">取引先一覧</h2>
+                    <button onclick="openModal('modal-account')" id="btn-new-account" class="btn-cy-primary px-5 py-2 font-bold shadow-sm" data-i18n="btn_new_acc">+ 新規作成</button>
                 </div>
-                
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs border-collapse border border-gray-200">
                         <thead class="cy-table-header text-gray-600 font-bold">
                             <tr>
-                                <th class="p-3 border-r border-gray-200" data-i18n="th_acc_name">取引先名</th>
-                                <th class="p-3 border-r border-gray-200" data-i18n="lbl_industry">業種</th>
-                                <th class="p-3 border-r border-gray-200" data-i18n="lbl_employees">従業員数</th>
+                                <th class="p-3 border-r" data-i18n="th_acc_name">取引先名</th>
+                                <th class="p-3 border-r" data-i18n="lbl_industry">業種</th>
+                                <th class="p-3 border-r" data-i18n="lbl_employees">従業員数</th>
                                 <th class="p-3" data-i18n="lbl_address">住所</th>
                             </tr>
                         </thead>
-                        <tbody id="account-table-body" class="bg-white divide-y divide-gray-100">
-                            </tbody>
+                        <tbody id="account-table-body" class="bg-white divide-y divide-gray-100"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <div id="view-home" class="grid grid-cols-3 gap-6">
-            <div class="col-span-2 space-y-6">
-                <div class="bg-white p-6 rounded border border-gray-200 shadow-sm">
-                    <h3 class="font-bold border-b pb-2 mb-4 text-blue-600" data-i18n="dash_notice">お知らせ</h3>
-                    <ul class="space-y-3">
-                        <li class="flex justify-between border-b border-dashed pb-2"><span>【重要】WalkMeガイドの更新作業について</span><span class="text-gray-400">2026/04/16</span></li>
-                        <li class="flex justify-between border-b border-dashed pb-2"><span>新規ダミーデータの流し込みが完了しました</span><span class="text-gray-400">2026/04/15</span></li>
-                    </ul>
+        <div id="view-opps" class="hidden">
+            <div class="bg-white p-6 rounded shadow-sm border border-gray-200">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold" data-i18n="nav_opps">商談管理</h2>
+                    <button onclick="openModal('modal-opp')" id="btn-new-opp" class="btn-cy-primary px-5 py-2 font-bold shadow-sm" data-i18n="btn_new_opp">+ 新規商談</button>
                 </div>
-            </div>
-            <div class="bg-white p-6 rounded border border-gray-200 shadow-sm">
-                <h3 class="font-bold border-b pb-2 mb-4 text-orange-600" data-i18n="dash_kpi">当月達成率</h3>
-                <div class="flex items-center justify-center h-40">
-                    <div class="w-32 h-32 border-8 border-orange-500 rounded-full flex items-center justify-center text-2xl font-black">75%</div>
-                </div>
+                <table class="w-full text-left text-xs border-collapse border border-gray-200">
+                    <thead class="cy-table-header">
+                        <tr><th class="p-3 border">商談名</th><th class="p-3 border">取引先</th><th class="p-3 border">金額</th><th class="p-3 border">フェーズ</th></tr>
+                    </thead>
+                    <tbody id="opp-table-body"></tbody>
+                </table>
             </div>
         </div>
 
-        <div id="view-opps" class="hidden">
-            <div class="bg-white p-6 rounded border border-gray-200 shadow-sm">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-bold" data-i18n="nav_opps">商談管理</h2>
-                    <button onclick="openModal('modal-opp')" class="btn-cy-primary px-5 py-2 font-bold shadow-sm" data-i18n="btn_new_opp">+ 新規商談</button>
-                </div>
-                <table class="w-full text-left border-collapse border border-gray-200">
-                    <thead class="bg-gray-50 text-gray-600 font-bold"><tr><th class="p-3 border">商談名</th><th class="p-3 border">取引先</th><th class="p-3 border">フェーズ</th></tr></thead>
-                    <tbody id="opp-table-body"></tbody>
-                </table>
+        <div id="view-home">
+            <h2 class="text-xl font-bold mb-4">Portal</h2>
+            <div class="bg-white p-10 rounded-lg border-2 border-dashed border-gray-300 text-center text-gray-400">
+                Welcome to WalkMe Training CRM
             </div>
         </div>
     </main>
 
     <div id="modal-account" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[100]">
-        <div class="bg-white rounded shadow-2xl w-[650px] overflow-hidden">
-            <div class="bg-gray-100 p-4 font-bold border-b flex justify-between items-center text-sm">
+        <div class="bg-white rounded shadow-2xl w-[700px] max-h-[90vh] overflow-y-auto">
+            <div class="bg-gray-100 p-4 font-bold border-b flex justify-between items-center sticky top-0">
                 <span data-i18n="modal_acc_title">レコードの追加（取引先）</span>
-                <button onclick="closeModal('modal-account')" class="text-gray-400 hover:text-black">✕</button>
+                <button onclick="closeModal('modal-account')" class="text-gray-400 text-xl">✕</button>
             </div>
-            <div class="p-8 space-y-6">
+            <div class="p-8 space-y-4">
                 <div class="flex items-center">
                     <label class="w-32 font-bold required" data-i18n="th_acc_name">取引先名</label>
-                    <input type="text" id="acc-name" class="flex-1 border border-gray-300 p-2 rounded focus:border-blue-500 outline-none">
+                    <input type="text" id="acc-name" class="flex-1 border border-gray-300 p-2 rounded">
                 </div>
                 <div class="flex items-center">
                     <label class="w-32 font-bold" data-i18n="lbl_industry">業種</label>
-                    <select id="acc-industry" class="flex-1 border border-gray-300 p-2 rounded outline-none">
-                        <option value="">--選択してください--</option>
-                        <option value="IT" data-i18n="opt_it">IT・通信</option>
-                        <option value="Mfg" data-i18n="opt_mfg">製造業</option>
-                        <option value="Retail" data-i18n="opt_retail">卸売・小売</option>
-                        <option value="Service" data-i18n="opt_service">サービス</option>
+                    <select id="acc-industry" class="flex-1 border border-gray-300 p-2 rounded">
+                        <option value="">--選択--</option><option>IT</option><option>製造業</option><option>卸売</option><option>サービス</option>
                     </select>
                 </div>
                 <div class="flex items-center">
                     <label class="w-32 font-bold" data-i18n="lbl_employees">従業員数</label>
-                    <input type="number" id="acc-employees" class="w-32 border border-gray-300 p-2 rounded outline-none" placeholder="名">
+                    <input type="number" id="acc-employees" class="w-32 border border-gray-300 p-2 rounded">
                 </div>
-                <div class="flex items-start">
-                    <label class="w-32 font-bold mt-2" data-i18n="lbl_address">住所</label>
-                    <textarea id="acc-address" class="flex-1 border border-gray-300 p-2 rounded outline-none h-20" placeholder="住所を入力してください..."></textarea>
+                <div class="border-t pt-4">
+                    <p class="font-bold text-blue-600 mb-2" data-i18n="lbl_address">住所</p>
+                    <div class="space-y-3 pl-4">
+                        <div class="flex items-center">
+                            <label class="w-24 text-xs font-bold" data-i18n="lbl_zip">郵便番号</label>
+                            <input type="text" id="acc-zip" class="w-32 border border-gray-300 p-2 rounded" placeholder="000-0000">
+                        </div>
+                        <div class="flex items-center">
+                            <label class="w-24 text-xs font-bold" data-i18n="lbl_pref">都道府県</label>
+                            <select id="acc-pref" class="w-48 border border-gray-300 p-2 rounded">
+                                <option value="">--選択--</option><option>東京都</option><option>大阪府</option><option>愛知県</option><option>福岡県</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center">
+                            <label class="w-24 text-xs font-bold" data-i18n="lbl_city">市区町村</label>
+                            <input type="text" id="acc-city" class="flex-1 border border-gray-300 p-2 rounded">
+                        </div>
+                        <div class="flex items-center">
+                            <label class="w-24 text-xs font-bold" data-i18n="lbl_street">番地</label>
+                            <input type="text" id="acc-street" class="flex-1 border border-gray-300 p-2 rounded">
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t pt-4">
+                    <label class="block font-bold mb-2" data-i18n="lbl_remarks">備考</label>
+                    <textarea id="acc-remarks" class="w-full border border-gray-300 p-2 rounded h-24"></textarea>
                 </div>
             </div>
             <div class="bg-gray-50 p-4 border-t flex justify-center space-x-4">
-                <button onclick="closeModal('modal-account')" class="bg-white border border-gray-300 px-8 py-2 rounded text-xs hover:bg-gray-100" data-i18n="btn_cancel">キャンセル</button>
-                <button onclick="addAccount()" id="acc-save-btn" class="bg-blue-500 text-white px-10 py-2 rounded text-xs font-bold shadow hover:bg-blue-600" data-i18n="btn_save">保存</button>
+                <button onclick="closeModal('modal-account')" class="bg-white border px-8 py-2 rounded">キャンセル</button>
+                <button onclick="addAccount()" id="acc-save-btn" class="bg-blue-500 text-white px-10 py-2 rounded font-bold shadow">保存</button>
             </div>
         </div>
     </div>
 
     <div id="modal-opp" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[100]">
-        <div class="bg-white rounded shadow-2xl w-[600px] overflow-hidden">
-            <div class="bg-gray-100 p-4 font-bold border-b flex justify-between items-center text-sm" data-i18n="btn_new_opp">新規商談登録</div>
-            <div class="p-8 space-y-6">
-                <div class="flex items-center">
-                    <label class="w-32 font-bold required" data-i18n="lbl_opp_name">商談名</label>
-                    <input type="text" id="opp-name" class="flex-1 border border-gray-300 p-2 rounded">
+        <div class="bg-white rounded shadow-2xl w-[700px] max-h-[90vh] overflow-y-auto text-sm">
+            <div class="bg-gray-100 p-4 font-bold border-b sticky top-0" data-i18n="btn_new_opp">新規商談登録</div>
+            <div class="p-8 space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block font-bold mb-1 required" data-i18n="lbl_opp_name">商談名</label>
+                        <input type="text" id="opp-name" class="w-full border p-2 rounded focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1 required" data-i18n="th_acc_name">取引先</label>
+                        <select id="opp-acc-id" class="w-full border p-2 rounded"></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1" data-i18n="lbl_opp_amount">商談金額 (円)</label>
+                        <input type="number" id="opp-amount" class="w-full border p-2 rounded" placeholder="¥">
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1" data-i18n="lbl_opp_stage">商談ステージ</label>
+                        <select id="opp-stage" class="w-full border p-2 rounded">
+                            <option>1. 見込み把握</option><option>2. ヒアリング</option><option>3. 提案・見積</option><option>4. 最終交渉</option><option>5. 受注/失注</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1" data-i18n="lbl_opp_date">クローズ予定日</label>
+                        <input type="date" id="opp-date" class="w-full border p-2 rounded">
+                    </div>
                 </div>
-                <div class="flex items-center">
-                    <label class="w-32 font-bold required" data-i18n="th_acc_name">取引先</label>
-                    <select id="opp-acc-id" class="flex-1 border border-gray-300 p-2 rounded"></select>
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center space-x-8">
+                    <label class="flex items-center font-bold cursor-pointer">
+                        <input type="checkbox" id="opp-comp-check" class="w-4 h-4 mr-2" onchange="toggleCompetitor(this.checked)">
+                        <span data-i18n="lbl_competitor">競合有り</span>
+                    </label>
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold mb-1" data-i18n="lbl_comp_name">競合名</label>
+                        <input type="text" id="opp-comp-name" class="w-full border p-2 rounded" disabled placeholder="競合他社名を入力">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1" data-i18n="lbl_opp_memo">商談メモ</label>
+                    <textarea id="opp-memo" class="w-full border p-2 rounded h-24"></textarea>
                 </div>
             </div>
-            <div class="p-4 border-t flex justify-center space-x-2">
-                <button onclick="closeModal('modal-opp')" class="border px-6 py-2 rounded text-xs" data-i18n="btn_cancel">キャンセル</button>
-                <button onclick="addOpp()" class="bg-blue-500 text-white px-8 py-2 rounded text-xs font-bold" data-i18n="btn_save">保存</button>
+            <div class="p-4 border-t bg-gray-50 flex justify-center space-x-2">
+                <button onclick="closeModal('modal-opp')" class="border px-8 py-2 rounded">キャンセル</button>
+                <button onclick="addOpp()" class="bg-blue-500 text-white px-10 py-2 rounded font-bold shadow">保存</button>
             </div>
         </div>
     </div>
@@ -175,71 +201,73 @@
 
     <script>
         let currentLang = 'ja';
-        
-        // 完全ダミーの取引先データ10件
         let accounts = [
-            { name: "株式会社サンプルテクノロジー", industry: "IT", employees: 1250, address: "東京都千代田区大手町1-2-3" },
-            { name: "グローバル・システムソリューションズ", industry: "IT", employees: 450, address: "大阪府大阪市中央区北浜" },
-            { name: "日本ビジネス流通株式会社", industry: "卸売・小売", employees: 3200, address: "東京都中央区日本橋" },
-            { name: "未来創研コンサルティング", industry: "サービス", employees: 85, address: "福岡県福岡市博多区" },
-            { name: "オーシャン貿易株式会社", industry: "卸売・小売", employees: 210, address: "神奈川県横浜市中区" },
-            { name: "エコアース・マニュファクチャリング", industry: "製造業", employees: 8900, address: "愛知県豊田市広路町" },
-            { name: "デジタルフロンティア・ラボ", industry: "IT", employees: 15, address: "東京都渋谷区道玄坂" },
-            { name: "プレミアムサービス日本株式会社", industry: "サービス", employees: 640, address: "北海道札幌市中央区" },
-            { name: "スターライト・マーケティング", industry: "サービス", employees: 120, address: "東京都港区六本木" },
-            { name: "サンシャイン食品株式会社", industry: "製造業", employees: 1500, address: "兵庫県神戸市中央区" }
+            { name: "株式会社サンプルテック", industry: "IT", employees: 120, address: "東京都港区" },
+            { name: "未来ソリューション", industry: "サービス", employees: 45, address: "大阪府北区" },
+            { name: "グローバル製造株式会社", industry: "製造業", employees: 890, address: "愛知県豊田市" },
+            { name: "オーシャン貿易", industry: "卸売", employees: 30, address: "神奈川県横浜市" },
+            { name: "デジタルフロンティア", industry: "IT", employees: 15, address: "東京都渋谷区" },
+            { name: "エコアース", industry: "製造業", employees: 500, address: "福岡県福岡市" },
+            { name: "プレミアムサービス", industry: "サービス", employees: 200, address: "北海道札幌市" },
+            { name: "スターマーケティング", industry: "サービス", employees: 80, address: "東京都港区" },
+            { name: "サン食品", industry: "製造業", employees: 1500, address: "兵庫県神戸市" },
+            { name: "日本インフラ通信", industry: "IT", employees: 3000, address: "東京都千代田区" }
         ];
-        
         let opps = [];
 
         const translations = {
             ja: {
-                search_placeholder: "アプリ内検索...", nav_home: "ポータル", nav_accounts: "取引先一覧", nav_opps: "商談管理",
+                nav_home: "ポータル", nav_accounts: "取引先", nav_opps: "商談",
                 acc_title: "取引先一覧", btn_new_acc: "新規レコード追加", th_acc_name: "取引先名",
-                lbl_industry: "業種", lbl_employees: "従業員数", lbl_address: "住所", btn_new_opp: "新規商談登録",
-                dash_notice: "お知らせ", dash_kpi: "当月達成率", modal_acc_title: "レコードの追加（取引先）",
-                opt_it: "IT・通信", opt_mfg: "製造業", opt_retail: "卸売・小売", opt_service: "サービス",
-                btn_save: "保存", btn_cancel: "キャンセル", success_msg: "データを保存しました。",
-                lbl_opp_name: "商談名"
+                lbl_industry: "業種", lbl_employees: "従業員数", lbl_address: "住所", lbl_zip: "郵便番号",
+                lbl_pref: "都道府県", lbl_city: "市区町村", lbl_street: "番地", lbl_remarks: "備考",
+                btn_new_opp: "新規商談登録", lbl_opp_name: "商談名", lbl_opp_amount: "商談金額 (円)",
+                lbl_opp_stage: "商談ステージ", lbl_opp_date: "クローズ予定日", lbl_competitor: "競合有り",
+                lbl_comp_name: "競合名", lbl_opp_memo: "商談メモ", btn_save: "保存", btn_cancel: "キャンセル",
+                success_msg: "データを保存しました。", modal_acc_title: "レコードの追加（取引先）", search_placeholder: "検索..."
             },
             en: {
-                search_placeholder: "Search apps...", nav_home: "Portal", nav_accounts: "Accounts", nav_opps: "Opportunities",
+                nav_home: "Portal", nav_accounts: "Accounts", nav_opps: "Opportunities",
                 acc_title: "Account List", btn_new_acc: "Add New Record", th_acc_name: "Account Name",
-                lbl_industry: "Industry", lbl_employees: "Employees", lbl_address: "Address", btn_new_opp: "New Opportunity",
-                dash_notice: "Notices", dash_kpi: "Monthly Achievement", modal_acc_title: "Add Record (Account)",
-                opt_it: "IT/Comm", opt_mfg: "Manufacturing", opt_retail: "Retail", opt_service: "Service",
-                btn_save: "Save", btn_cancel: "Cancel", success_msg: "Record saved successfully.",
-                lbl_opp_name: "Opp Name"
+                lbl_industry: "Industry", lbl_employees: "Employees", lbl_address: "Address", lbl_zip: "Zip Code",
+                lbl_pref: "Prefecture", lbl_city: "City", lbl_street: "Street", lbl_remarks: "Remarks",
+                btn_new_opp: "New Opportunity", lbl_opp_name: "Opp Name", lbl_opp_amount: "Amount (JPY)",
+                lbl_opp_stage: "Stage", lbl_opp_date: "Close Date", lbl_competitor: "Competitor",
+                lbl_comp_name: "Competitor Name", lbl_opp_memo: "Opp Memo", btn_save: "Save", btn_cancel: "Cancel",
+                success_msg: "Saved successfully.", modal_acc_title: "Add Record (Account)", search_placeholder: "Search..."
             }
         };
 
         function render() {
-            const body = document.getElementById('account-table-body');
-            body.innerHTML = accounts.map(a => `
-                <tr class="hover:bg-blue-50 transition border-b border-gray-100">
-                    <td class="p-3 font-bold text-blue-600 cursor-pointer border-r border-gray-100">${a.name}</td>
-                    <td class="p-3 border-r border-gray-100">${a.industry}</td>
-                    <td class="p-3 border-r border-gray-100 text-right">${a.employees.toLocaleString()}</td>
+            document.getElementById('account-table-body').innerHTML = accounts.map(a => `
+                <tr class="hover:bg-blue-50 border-b">
+                    <td class="p-3 font-bold text-blue-600 border-r">${a.name}</td>
+                    <td class="p-3 border-r">${a.industry}</td>
+                    <td class="p-3 border-r text-right">${a.employees.toLocaleString()}</td>
                     <td class="p-3">${a.address}</td>
                 </tr>
             `).join('');
 
             const select = document.getElementById('opp-acc-id');
-            const placeholder = currentLang === 'ja' ? '--選択してください--' : '--Select Account--';
+            const placeholder = currentLang === 'ja' ? '--選択してください--' : '--Select--';
             select.innerHTML = `<option value="">${placeholder}</option>` + accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
 
-            const oppBody = document.getElementById('opp-table-body');
-            oppBody.innerHTML = opps.map(o => `<tr class="border-b"><td class="p-3 border">${o.name}</td><td class="p-3 border font-bold text-blue-600">${o.acc}</td><td class="p-3 border">提案中</td></tr>`).join('');
+            document.getElementById('opp-table-body').innerHTML = opps.map(o => `
+                <tr class="border-b"><td class="p-3 border">${o.name}</td><td class="p-3 border text-blue-600">${o.acc}</td><td class="p-3 border text-right">¥${o.amount}</td><td class="p-3 border">${o.stage}</td></tr>
+            `).join('');
+        }
+
+        function toggleCompetitor(checked) {
+            const input = document.getElementById('opp-comp-name');
+            input.disabled = !checked;
+            if(!checked) input.value = "";
         }
 
         function changeLanguage(lang) {
             currentLang = lang;
-            document.documentElement.lang = lang; // HTMLのlang属性を更新
+            document.documentElement.lang = lang;
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 el.innerText = translations[lang][el.getAttribute('data-i18n')];
-            });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                el.placeholder = translations[lang][el.getAttribute('data-i18n-placeholder')];
             });
             render();
         }
@@ -259,28 +287,23 @@
             if(!name) return;
             accounts.unshift({
                 name,
-                industry: document.getElementById('acc-industry').value || "未設定",
+                industry: document.getElementById('acc-industry').value,
                 employees: parseInt(document.getElementById('acc-employees').value || 0),
-                address: document.getElementById('acc-address').value || "未設定"
+                address: document.getElementById('acc-pref').value + document.getElementById('acc-city').value
             });
             closeModal('modal-account');
             showToast();
             render();
-            // 入力リセット
-            document.getElementById('acc-name').value = "";
-            document.getElementById('acc-employees').value = "";
-            document.getElementById('acc-address').value = "";
         }
 
         function addOpp() {
             const name = document.getElementById('opp-name').value;
             const acc = document.getElementById('opp-acc-id').value;
             if(!name || !acc) return;
-            opps.unshift({ name, acc });
+            opps.unshift({ name, acc, amount: document.getElementById('opp-amount').value || 0, stage: document.getElementById('opp-stage').value });
             closeModal('modal-opp');
             showToast();
             render();
-            document.getElementById('opp-name').value = "";
         }
 
         function showToast() {
