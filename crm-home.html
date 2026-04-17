@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise CRM V8 - Advanced Mock</title>
+    <title>Enterprise CRM V9 - Edit & Update Ready</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --cy-orange: #ff9800; --cy-blue: #00a1e9; --cy-bg: #f7f9fa; --cy-border: #e3e7e8; }
@@ -13,9 +13,11 @@
         .cy-nav-item.active { border-bottom-color: var(--cy-orange); color: var(--cy-orange); font-weight: bold; }
         .btn-cy-primary { background-color: var(--cy-blue); color: white; border-radius: 4px; }
         .btn-cy-primary:hover { background-color: #008ccb; }
+        .btn-cy-edit { color: var(--cy-blue); border: 1px solid var(--cy-blue); border-radius: 4px; background: white; padding: 2px 8px; font-size: 11px; }
+        .btn-cy-edit:hover { background-color: #e6f6ff; }
         .cy-table-header { background-color: #f2f2f2; border-bottom: 2px solid var(--cy-border); }
         .required::after { content: " *"; color: #e74c3c; font-weight: bold; }
-        input:disabled, select:disabled, textarea:disabled { background-color: #f0f0f0; cursor: not-allowed; }
+        input:disabled { background-color: #f5f5f5; cursor: not-allowed; }
         .success-pop { animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
@@ -25,7 +27,7 @@
     <header class="cy-header p-2 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-4">
             <div class="bg-orange-500 p-1 rounded font-bold text-white text-xs">CRM</div>
-            <h1 class="font-bold text-base">顧客管理システム V8</h1>
+            <h1 class="font-bold text-base">顧客管理システム V9</h1>
         </div>
         <div class="flex items-center space-x-4">
             <select onchange="changeLanguage(this.value)" id="lang-selector" class="bg-transparent border border-gray-500 text-white text-[10px] rounded px-2 py-1 outline-none">
@@ -36,31 +38,31 @@
         </div>
     </header>
 
-    <nav class="bg-white border-b flex space-x-10 px-10 text-xs">
+    <nav class="bg-white border-b flex space-x-10 px-10 text-xs shadow-sm">
         <button onclick="switchTab('home')" id="tab-home" class="cy-nav-item py-4 active" data-i18n="nav_home">ポータル</button>
         <button onclick="switchTab('accounts')" id="tab-accounts" class="cy-nav-item py-4" data-i18n="nav_accounts">取引先</button>
         <button onclick="switchTab('opps')" id="tab-opps" class="cy-nav-item py-4" data-i18n="nav_opps">商談</button>
     </nav>
 
     <main class="p-6 max-w-[1400px] mx-auto">
-        
         <div id="view-accounts" class="hidden">
             <div class="bg-white p-6 rounded shadow-sm border border-gray-200">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-lg font-bold" data-i18n="acc_title">取引先一覧</h2>
-                    <button onclick="openModal('modal-account')" id="btn-new-account" class="btn-cy-primary px-5 py-2 font-bold shadow-sm" data-i18n="btn_new_acc">+ 新規作成</button>
+                    <button onclick="openAccountModal()" id="btn-new-account" class="btn-cy-primary px-5 py-2 font-bold shadow-sm" data-i18n="btn_new_acc">+ 新規作成</button>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse border border-gray-200">
+                    <table class="w-full text-left text-xs border-collapse">
                         <thead class="cy-table-header text-gray-600 font-bold">
                             <tr>
-                                <th class="p-3 border-r" data-i18n="th_acc_name">取引先名</th>
-                                <th class="p-3 border-r" data-i18n="lbl_industry">業種</th>
-                                <th class="p-3 border-r" data-i18n="lbl_employees">従業員数</th>
-                                <th class="p-3" data-i18n="lbl_address">住所</th>
+                                <th class="p-3 border">操作</th>
+                                <th class="p-3 border" data-i18n="th_acc_name">取引先名</th>
+                                <th class="p-3 border" data-i18n="lbl_industry">業種</th>
+                                <th class="p-3 border" data-i18n="lbl_employees">従業員数</th>
+                                <th class="p-3 border" data-i18n="lbl_address">住所</th>
                             </tr>
                         </thead>
-                        <tbody id="account-table-body" class="bg-white divide-y divide-gray-100"></tbody>
+                        <tbody id="account-table-body" class="bg-white"></tbody>
                     </table>
                 </div>
             </div>
@@ -70,11 +72,11 @@
             <div class="bg-white p-6 rounded shadow-sm border border-gray-200">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-lg font-bold" data-i18n="nav_opps">商談管理</h2>
-                    <button onclick="openModal('modal-opp')" id="btn-new-opp" class="btn-cy-primary px-5 py-2 font-bold shadow-sm" data-i18n="btn_new_opp">+ 新規商談</button>
+                    <button onclick="openOppModal()" id="btn-new-opp" class="btn-cy-primary px-5 py-2 font-bold shadow-sm" data-i18n="btn_new_opp">+ 新規商談</button>
                 </div>
                 <table class="w-full text-left text-xs border-collapse border border-gray-200">
                     <thead class="cy-table-header">
-                        <tr><th class="p-3 border">商談名</th><th class="p-3 border">取引先</th><th class="p-3 border">金額</th><th class="p-3 border">フェーズ</th></tr>
+                        <tr><th class="p-3 border">操作</th><th class="p-3 border">商談名</th><th class="p-3 border">取引先</th><th class="p-3 border">金額</th><th class="p-3 border">フェーズ</th></tr>
                     </thead>
                     <tbody id="opp-table-body"></tbody>
                 </table>
@@ -82,9 +84,9 @@
         </div>
 
         <div id="view-home">
-            <h2 class="text-xl font-bold mb-4">Portal</h2>
-            <div class="bg-white p-10 rounded-lg border-2 border-dashed border-gray-300 text-center text-gray-400">
-                Welcome to WalkMe Training CRM
+            <div class="bg-white p-10 rounded border text-center text-gray-400">
+                <p>Welcome to CRM Mock V9</p>
+                <p class="text-xs mt-2">データ編集・更新機能が有効です</p>
             </div>
         </div>
     </main>
@@ -92,224 +94,193 @@
     <div id="modal-account" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[100]">
         <div class="bg-white rounded shadow-2xl w-[700px] max-h-[90vh] overflow-y-auto">
             <div class="bg-gray-100 p-4 font-bold border-b flex justify-between items-center sticky top-0">
-                <span data-i18n="modal_acc_title">レコードの追加（取引先）</span>
+                <span id="acc-modal-title" data-i18n="modal_acc_title">レコードの追加</span>
                 <button onclick="closeModal('modal-account')" class="text-gray-400 text-xl">✕</button>
             </div>
             <div class="p-8 space-y-4">
-                <div class="flex items-center">
-                    <label class="w-32 font-bold required" data-i18n="th_acc_name">取引先名</label>
-                    <input type="text" id="acc-name" class="flex-1 border border-gray-300 p-2 rounded">
-                </div>
-                <div class="flex items-center">
-                    <label class="w-32 font-bold" data-i18n="lbl_industry">業種</label>
+                <input type="hidden" id="acc-edit-index">
+                <div class="flex items-center"><label class="w-32 font-bold required" data-i18n="th_acc_name">取引先名</label>
+                    <input type="text" id="acc-name" class="flex-1 border border-gray-300 p-2 rounded"></div>
+                <div class="flex items-center"><label class="w-32 font-bold" data-i18n="lbl_industry">業種</label>
                     <select id="acc-industry" class="flex-1 border border-gray-300 p-2 rounded">
                         <option value="">--選択--</option><option>IT</option><option>製造業</option><option>卸売</option><option>サービス</option>
-                    </select>
-                </div>
-                <div class="flex items-center">
-                    <label class="w-32 font-bold" data-i18n="lbl_employees">従業員数</label>
-                    <input type="number" id="acc-employees" class="w-32 border border-gray-300 p-2 rounded">
-                </div>
+                    </select></div>
+                <div class="flex items-center"><label class="w-32 font-bold" data-i18n="lbl_employees">従業員数</label>
+                    <input type="number" id="acc-employees" class="w-32 border border-gray-300 p-2 rounded"></div>
                 <div class="border-t pt-4">
-                    <p class="font-bold text-blue-600 mb-2" data-i18n="lbl_address">住所</p>
-                    <div class="space-y-3 pl-4">
-                        <div class="flex items-center">
-                            <label class="w-24 text-xs font-bold" data-i18n="lbl_zip">郵便番号</label>
-                            <input type="text" id="acc-zip" class="w-32 border border-gray-300 p-2 rounded" placeholder="000-0000">
-                        </div>
-                        <div class="flex items-center">
-                            <label class="w-24 text-xs font-bold" data-i18n="lbl_pref">都道府県</label>
-                            <select id="acc-pref" class="w-48 border border-gray-300 p-2 rounded">
-                                <option value="">--選択--</option><option>東京都</option><option>大阪府</option><option>愛知県</option><option>福岡県</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center">
-                            <label class="w-24 text-xs font-bold" data-i18n="lbl_city">市区町村</label>
-                            <input type="text" id="acc-city" class="flex-1 border border-gray-300 p-2 rounded">
-                        </div>
-                        <div class="flex items-center">
-                            <label class="w-24 text-xs font-bold" data-i18n="lbl_street">番地</label>
-                            <input type="text" id="acc-street" class="flex-1 border border-gray-300 p-2 rounded">
-                        </div>
+                    <p class="font-bold text-blue-600 mb-2">住所情報</p>
+                    <div class="grid grid-cols-2 gap-4 pl-4">
+                        <input type="text" id="acc-zip" class="border p-2 rounded" placeholder="郵便番号">
+                        <select id="acc-pref" class="border p-2 rounded">
+                            <option value="">--都道府県--</option><option>東京都</option><option>大阪府</option><option>愛知県</option>
+                        </select>
+                        <input type="text" id="acc-city" class="border p-2 rounded" placeholder="市区町村">
+                        <input type="text" id="acc-street" class="border p-2 rounded" placeholder="番地">
                     </div>
                 </div>
-                <div class="border-t pt-4">
-                    <label class="block font-bold mb-2" data-i18n="lbl_remarks">備考</label>
-                    <textarea id="acc-remarks" class="w-full border border-gray-300 p-2 rounded h-24"></textarea>
-                </div>
+                <div><label class="block font-bold mb-2" data-i18n="lbl_remarks">備考</label>
+                    <textarea id="acc-remarks" class="w-full border border-gray-300 p-2 rounded h-20"></textarea></div>
             </div>
             <div class="bg-gray-50 p-4 border-t flex justify-center space-x-4">
-                <button onclick="closeModal('modal-account')" class="bg-white border px-8 py-2 rounded">キャンセル</button>
-                <button onclick="addAccount()" id="acc-save-btn" class="bg-blue-500 text-white px-10 py-2 rounded font-bold shadow">保存</button>
+                <button onclick="saveAccount()" class="bg-blue-500 text-white px-12 py-2 rounded font-bold" data-i18n="btn_save">保存</button>
             </div>
         </div>
     </div>
 
     <div id="modal-opp" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[100]">
-        <div class="bg-white rounded shadow-2xl w-[700px] max-h-[90vh] overflow-y-auto text-sm">
-            <div class="bg-gray-100 p-4 font-bold border-b sticky top-0" data-i18n="btn_new_opp">新規商談登録</div>
+        <div class="bg-white rounded shadow-2xl w-[700px] max-h-[90vh] overflow-y-auto">
+            <div class="bg-gray-100 p-4 font-bold border-b sticky top-0">商談の編集/登録</div>
             <div class="p-8 space-y-5">
+                <input type="hidden" id="opp-edit-index">
+                <div><label class="block font-bold mb-1 required">商談名</label><input type="text" id="opp-name" class="w-full border p-2 rounded"></div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
-                        <label class="block font-bold mb-1 required" data-i18n="lbl_opp_name">商談名</label>
-                        <input type="text" id="opp-name" class="w-full border p-2 rounded focus:border-blue-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1 required" data-i18n="th_acc_name">取引先</label>
-                        <select id="opp-acc-id" class="w-full border p-2 rounded"></select>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1" data-i18n="lbl_opp_amount">商談金額 (円)</label>
-                        <input type="number" id="opp-amount" class="w-full border p-2 rounded" placeholder="¥">
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1" data-i18n="lbl_opp_stage">商談ステージ</label>
-                        <select id="opp-stage" class="w-full border p-2 rounded">
-                            <option>1. 見込み把握</option><option>2. ヒアリング</option><option>3. 提案・見積</option><option>4. 最終交渉</option><option>5. 受注/失注</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1" data-i18n="lbl_opp_date">クローズ予定日</label>
-                        <input type="date" id="opp-date" class="w-full border p-2 rounded">
-                    </div>
+                    <div><label class="block font-bold mb-1 required">取引先</label><select id="opp-acc-id" class="w-full border p-2 rounded"></select></div>
+                    <div><label class="block font-bold mb-1">金額 (円)</label><input type="number" id="opp-amount" class="w-full border p-2 rounded"></div>
+                    <div><label class="block font-bold mb-1">ステージ</label><select id="opp-stage" class="w-full border p-2 rounded">
+                        <option>1. 見込み把握</option><option>2. 提案</option><option>3. 受注</option></select></div>
+                    <div><label class="block font-bold mb-1">クローズ予定日</label><input type="date" id="opp-date" class="w-full border p-2 rounded"></div>
                 </div>
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center space-x-8">
-                    <label class="flex items-center font-bold cursor-pointer">
-                        <input type="checkbox" id="opp-comp-check" class="w-4 h-4 mr-2" onchange="toggleCompetitor(this.checked)">
-                        <span data-i18n="lbl_competitor">競合有り</span>
-                    </label>
-                    <div class="flex-1">
-                        <label class="block text-xs font-bold mb-1" data-i18n="lbl_comp_name">競合名</label>
-                        <input type="text" id="opp-comp-name" class="w-full border p-2 rounded" disabled placeholder="競合他社名を入力">
-                    </div>
+                <div class="bg-blue-50 p-4 rounded flex items-center space-x-4">
+                    <label class="flex items-center font-bold"><input type="checkbox" id="opp-comp-check" class="mr-2" onchange="toggleCompetitor(this.checked)">競合有り</label>
+                    <input type="text" id="opp-comp-name" class="flex-1 border p-2 rounded" disabled placeholder="競合名">
                 </div>
-                <div>
-                    <label class="block font-bold mb-1" data-i18n="lbl_opp_memo">商談メモ</label>
-                    <textarea id="opp-memo" class="w-full border p-2 rounded h-24"></textarea>
-                </div>
+                <div><label class="block font-bold mb-1">商談メモ</label><textarea id="opp-memo" class="w-full border p-2 rounded h-20"></textarea></div>
             </div>
-            <div class="p-4 border-t bg-gray-50 flex justify-center space-x-2">
-                <button onclick="closeModal('modal-opp')" class="border px-8 py-2 rounded">キャンセル</button>
-                <button onclick="addOpp()" class="bg-blue-500 text-white px-10 py-2 rounded font-bold shadow">保存</button>
-            </div>
+            <div class="bg-gray-50 p-4 border-t flex justify-center"><button onclick="saveOpp()" class="bg-blue-500 text-white px-12 py-2 rounded font-bold">保存</button></div>
         </div>
     </div>
 
-    <div id="success-toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-10 py-3 rounded shadow-2xl hidden z-[200] success-pop font-bold">
-        <span data-i18n="success_msg">データを保存しました。</span>
-    </div>
+    <div id="success-toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-10 py-3 rounded shadow-2xl hidden z-[200] success-pop font-bold">保存しました。</div>
 
     <script>
-        let currentLang = 'ja';
         let accounts = [
-            { name: "株式会社サンプルテック", industry: "IT", employees: 120, address: "東京都港区" },
-            { name: "未来ソリューション", industry: "サービス", employees: 45, address: "大阪府北区" },
-            { name: "グローバル製造株式会社", industry: "製造業", employees: 890, address: "愛知県豊田市" },
-            { name: "オーシャン貿易", industry: "卸売", employees: 30, address: "神奈川県横浜市" },
-            { name: "デジタルフロンティア", industry: "IT", employees: 15, address: "東京都渋谷区" },
-            { name: "エコアース", industry: "製造業", employees: 500, address: "福岡県福岡市" },
-            { name: "プレミアムサービス", industry: "サービス", employees: 200, address: "北海道札幌市" },
-            { name: "スターマーケティング", industry: "サービス", employees: 80, address: "東京都港区" },
-            { name: "サン食品", industry: "製造業", employees: 1500, address: "兵庫県神戸市" },
-            { name: "日本インフラ通信", industry: "IT", employees: 3000, address: "東京都千代田区" }
+            { name: "株式会社サンプルテック", industry: "IT", employees: 120, zip:"100-0001", pref:"東京都", city:"港区", street:"1-1", remarks:"" },
+            { name: "未来製造株式会社", industry: "製造業", employees: 450, zip:"530-0001", pref:"大阪府", city:"北区", street:"2-2", remarks:"" }
         ];
         let opps = [];
-
-        const translations = {
-            ja: {
-                nav_home: "ポータル", nav_accounts: "取引先", nav_opps: "商談",
-                acc_title: "取引先一覧", btn_new_acc: "新規レコード追加", th_acc_name: "取引先名",
-                lbl_industry: "業種", lbl_employees: "従業員数", lbl_address: "住所", lbl_zip: "郵便番号",
-                lbl_pref: "都道府県", lbl_city: "市区町村", lbl_street: "番地", lbl_remarks: "備考",
-                btn_new_opp: "新規商談登録", lbl_opp_name: "商談名", lbl_opp_amount: "商談金額 (円)",
-                lbl_opp_stage: "商談ステージ", lbl_opp_date: "クローズ予定日", lbl_competitor: "競合有り",
-                lbl_comp_name: "競合名", lbl_opp_memo: "商談メモ", btn_save: "保存", btn_cancel: "キャンセル",
-                success_msg: "データを保存しました。", modal_acc_title: "レコードの追加（取引先）", search_placeholder: "検索..."
-            },
-            en: {
-                nav_home: "Portal", nav_accounts: "Accounts", nav_opps: "Opportunities",
-                acc_title: "Account List", btn_new_acc: "Add New Record", th_acc_name: "Account Name",
-                lbl_industry: "Industry", lbl_employees: "Employees", lbl_address: "Address", lbl_zip: "Zip Code",
-                lbl_pref: "Prefecture", lbl_city: "City", lbl_street: "Street", lbl_remarks: "Remarks",
-                btn_new_opp: "New Opportunity", lbl_opp_name: "Opp Name", lbl_opp_amount: "Amount (JPY)",
-                lbl_opp_stage: "Stage", lbl_opp_date: "Close Date", lbl_competitor: "Competitor",
-                lbl_comp_name: "Competitor Name", lbl_opp_memo: "Opp Memo", btn_save: "Save", btn_cancel: "Cancel",
-                success_msg: "Saved successfully.", modal_acc_title: "Add Record (Account)", search_placeholder: "Search..."
-            }
-        };
+        let currentLang = 'ja';
 
         function render() {
-            document.getElementById('account-table-body').innerHTML = accounts.map(a => `
-                <tr class="hover:bg-blue-50 border-b">
-                    <td class="p-3 font-bold text-blue-600 border-r">${a.name}</td>
-                    <td class="p-3 border-r">${a.industry}</td>
-                    <td class="p-3 border-r text-right">${a.employees.toLocaleString()}</td>
-                    <td class="p-3">${a.address}</td>
+            document.getElementById('account-table-body').innerHTML = accounts.map((a, i) => `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="p-2 border text-center"><button onclick="openAccountModal(${i})" class="btn-cy-edit">編集</button></td>
+                    <td class="p-3 border font-bold text-blue-600">${a.name}</td>
+                    <td class="p-3 border">${a.industry}</td>
+                    <td class="p-3 border text-right">${a.employees}</td>
+                    <td class="p-3 border text-xs">${a.pref}${a.city}${a.street}</td>
                 </tr>
             `).join('');
 
-            const select = document.getElementById('opp-acc-id');
-            const placeholder = currentLang === 'ja' ? '--選択してください--' : '--Select--';
-            select.innerHTML = `<option value="">${placeholder}</option>` + accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
-
-            document.getElementById('opp-table-body').innerHTML = opps.map(o => `
-                <tr class="border-b"><td class="p-3 border">${o.name}</td><td class="p-3 border text-blue-600">${o.acc}</td><td class="p-3 border text-right">¥${o.amount}</td><td class="p-3 border">${o.stage}</td></tr>
+            document.getElementById('opp-table-body').innerHTML = opps.map((o, i) => `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="p-2 border text-center"><button onclick="openOppModal(${i})" class="btn-cy-edit">編集</button></td>
+                    <td class="p-3 border">${o.name}</td>
+                    <td class="p-3 border text-blue-600">${o.acc}</td>
+                    <td class="p-3 border text-right">¥${Number(o.amount).toLocaleString()}</td>
+                    <td class="p-3 border">${o.stage}</td>
+                </tr>
             `).join('');
+
+            const sel = document.getElementById('opp-acc-id');
+            sel.innerHTML = '<option value="">--選択--</option>' + accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
         }
 
-        function toggleCompetitor(checked) {
-            const input = document.getElementById('opp-comp-name');
-            input.disabled = !checked;
-            if(!checked) input.value = "";
+        function openAccountModal(index = null) {
+            const isEdit = index !== null;
+            document.getElementById('acc-edit-index').value = isEdit ? index : "";
+            document.getElementById('acc-modal-title').innerText = isEdit ? "レコードの編集" : "レコードの追加";
+            
+            const data = isEdit ? accounts[index] : { name:"", industry:"", employees:"", zip:"", pref:"", city:"", street:"", remarks:"" };
+            document.getElementById('acc-name').value = data.name;
+            document.getElementById('acc-industry').value = data.industry;
+            document.getElementById('acc-employees').value = data.employees;
+            document.getElementById('acc-zip').value = data.zip;
+            document.getElementById('acc-pref').value = data.pref;
+            document.getElementById('acc-city').value = data.city;
+            document.getElementById('acc-street').value = data.street;
+            document.getElementById('acc-remarks').value = data.remarks;
+            
+            document.getElementById('modal-account').classList.remove('hidden');
         }
 
-        function changeLanguage(lang) {
-            currentLang = lang;
-            document.documentElement.lang = lang;
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                el.innerText = translations[lang][el.getAttribute('data-i18n')];
-            });
-            render();
-        }
-
-        function switchTab(tab) {
-            ['view-home', 'view-accounts', 'view-opps'].forEach(v => document.getElementById(v).classList.add('hidden'));
-            ['tab-home', 'tab-accounts', 'tab-opps'].forEach(t => document.getElementById(t).classList.remove('active'));
-            document.getElementById('view-' + tab).classList.remove('hidden');
-            document.getElementById('tab-' + tab).classList.add('active');
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-        function addAccount() {
-            const name = document.getElementById('acc-name').value;
-            if(!name) return;
-            accounts.unshift({
-                name,
+        function saveAccount() {
+            const idx = document.getElementById('acc-edit-index').value;
+            const newData = {
+                name: document.getElementById('acc-name').value,
                 industry: document.getElementById('acc-industry').value,
-                employees: parseInt(document.getElementById('acc-employees').value || 0),
-                address: document.getElementById('acc-pref').value + document.getElementById('acc-city').value
-            });
+                employees: document.getElementById('acc-employees').value,
+                zip: document.getElementById('acc-zip').value,
+                pref: document.getElementById('acc-pref').value,
+                city: document.getElementById('acc-city').value,
+                street: document.getElementById('acc-street').value,
+                remarks: document.getElementById('acc-remarks').value
+            };
+            if(idx === "") accounts.unshift(newData);
+            else accounts[idx] = newData;
+            
             closeModal('modal-account');
             showToast();
             render();
         }
 
-        function addOpp() {
-            const name = document.getElementById('opp-name').value;
-            const acc = document.getElementById('opp-acc-id').value;
-            if(!name || !acc) return;
-            opps.unshift({ name, acc, amount: document.getElementById('opp-amount').value || 0, stage: document.getElementById('opp-stage').value });
+        function openOppModal(index = null) {
+            const isEdit = index !== null;
+            document.getElementById('opp-edit-index').value = isEdit ? index : "";
+            const data = isEdit ? opps[index] : { name:"", acc:"", amount:0, stage:"", date:"", comp:false, compName:"", memo:"" };
+            
+            document.getElementById('opp-name').value = data.name;
+            document.getElementById('opp-acc-id').value = data.acc;
+            document.getElementById('opp-amount').value = data.amount;
+            document.getElementById('opp-stage').value = data.stage;
+            document.getElementById('opp-date').value = data.date;
+            document.getElementById('opp-comp-check').checked = data.comp;
+            document.getElementById('opp-comp-name').value = data.compName;
+            document.getElementById('opp-comp-name').disabled = !data.comp;
+            document.getElementById('opp-memo').value = data.memo;
+            
+            document.getElementById('modal-opp').classList.remove('hidden');
+        }
+
+        function saveOpp() {
+            const idx = document.getElementById('opp-edit-index').value;
+            const newData = {
+                name: document.getElementById('opp-name').value,
+                acc: document.getElementById('opp-acc-id').value,
+                amount: document.getElementById('opp-amount').value,
+                stage: document.getElementById('opp-stage').value,
+                date: document.getElementById('opp-date').value,
+                comp: document.getElementById('opp-comp-check').checked,
+                compName: document.getElementById('opp-comp-name').value,
+                memo: document.getElementById('opp-memo').value
+            };
+            if(idx === "") opps.unshift(newData);
+            else opps[idx] = newData;
+            
             closeModal('modal-opp');
             showToast();
             render();
         }
 
+        function toggleCompetitor(c) { 
+            const i = document.getElementById('opp-comp-name');
+            i.disabled = !c; if(!c) i.value = ""; 
+        }
+
+        function changeLanguage(l) { 
+            currentLang = l; document.documentElement.lang = l; render(); 
+        }
+
+        function switchTab(t) {
+            ['home','accounts','opps'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
+            ['home','accounts','opps'].forEach(v => document.getElementById('tab-'+v).classList.remove('active'));
+            document.getElementById('view-'+t).classList.remove('hidden');
+            document.getElementById('tab-'+t).classList.add('active');
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function showToast() {
-            const toast = document.getElementById('success-toast');
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 2500);
+            const t = document.getElementById('success-toast');
+            t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 2000);
         }
 
         render();
