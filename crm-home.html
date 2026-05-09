@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise CRM - Training Edition V12</title>
+    <title>Enterprise CRM - Training Edition V13</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --cy-orange: #ff9800; --cy-blue: #00a1e9; --cy-bg: #f7f9fa; --cy-border: #e3e7e8; }
@@ -27,7 +27,7 @@
     <header class="cy-header p-2 flex justify-between items-center shadow-md">
         <div class="flex items-center space-x-4">
             <div class="bg-orange-500 p-1 rounded font-bold text-white text-xs">CRM</div>
-            <h1 class="font-bold text-base" data-i18n="app_title">顧客管理システム V12</h1>
+            <h1 class="font-bold text-base" data-i18n="app_title">顧客管理システム V13</h1>
         </div>
         <div class="flex items-center space-x-4">
             <button onclick="resetData()" class="text-[10px] text-gray-400 hover:text-white" data-i18n="btn_reset">データを初期化</button>
@@ -35,21 +35,21 @@
                 <option value="ja" class="text-black">日本語 (JP)</option>
                 <option value="en" class="text-black">English (EN)</option>
             </select>
-            <div class="w-7 h-7 bg-blue-500 rounded-md flex items-center justify-center text-[10px] font-bold">USR</div>
+            <div class="w-7 h-7 bg-blue-500 rounded-md flex items-center justify-center text-[10px] font-bold uppercase">USR</div>
         </div>
     </header>
 
     <nav class="bg-white border-b flex space-x-10 px-10 text-xs shadow-sm sticky top-0 z-40">
         <button onclick="switchTab('home')" id="tab-home" class="cy-nav-item py-4 active" data-i18n="nav_home">ポータル</button>
-        <button onclick="switchTab('accounts')" id="tab-accounts" class="cy-nav-item py-4" data-i18n="nav_accounts">取引先</button>
-        <button onclick="switchTab('opps')" id="tab-opps" class="cy-nav-item py-4" data-i18n="nav_opps">商談</button>
+        <button onclick="switchTab('accounts')" id="tab-accounts" class="cy-nav-item py-4" data-i18n="nav_accounts">取引先一覧</button>
+        <button onclick="switchTab('opps')" id="tab-opps" class="cy-nav-item py-4" data-i18n="nav_opps">商談管理</button>
     </nav>
 
     <main class="p-6 max-w-[1400px] mx-auto">
         <div id="view-home">
             <div class="bg-white p-10 rounded border text-center text-gray-400">
-                <p class="text-lg font-bold" data-i18n="dash_welcome">ダッシュボードへようこそ</p>
-                <p class="mt-2" data-i18n="dash_info">LocalStorageによりデータはブラウザに保持されます。</p>
+                <p class="text-lg font-bold" data-i18n="dash_welcome">ダッシュボード</p>
+                <p class="mt-2 text-xs" data-i18n="dash_info">データの追加・編集が可能です。出荷先・得意先参照フィールドを追加しました。</p>
             </div>
         </div>
 
@@ -63,7 +63,7 @@
                     <table class="w-full text-left text-xs border-collapse">
                         <thead class="cy-table-header text-gray-600 font-bold">
                             <tr>
-                                <th class="p-3 border">操作</th>
+                                <th class="p-3 border w-16">操作</th>
                                 <th class="p-3 border" data-i18n="th_acc_name">取引先名</th>
                                 <th class="p-3 border" data-i18n="lbl_industry">業種</th>
                                 <th class="p-3 border" data-i18n="lbl_employees">従業員数</th>
@@ -86,10 +86,10 @@
                     <table class="w-full text-left text-xs border-collapse border border-gray-200">
                         <thead class="cy-table-header text-gray-600 font-bold">
                             <tr>
-                                <th class="p-3 border">操作</th>
+                                <th class="p-3 border w-16">操作</th>
                                 <th class="p-3 border" data-i18n="lbl_opp_name">商談名</th>
                                 <th class="p-3 border" data-i18n="th_acc_name">取引先</th>
-                                <th class="p-3 border text-right" data-i18n="lbl_opp_amount">金額 (円)</th>
+                                <th class="p-3 border text-right" data-i18n="lbl_opp_amount">金額</th>
                                 <th class="p-3 border" data-i18n="lbl_opp_stage">フェーズ</th>
                                 <th class="p-3 border" data-i18n="lbl_opp_date">予定日</th>
                             </tr>
@@ -114,6 +114,7 @@
                     <select id="acc-industry" class="flex-1 border p-2 rounded">
                         <option value="IT" data-i18n="opt_it">IT</option>
                         <option value="Mfg" data-i18n="opt_mfg">製造業</option>
+                        <option value="Retail" data-i18n="opt_retail">卸売・小売</option>
                         <option value="Service" data-i18n="opt_service">サービス</option>
                     </select></div>
                 <div class="flex items-center"><label class="w-32 font-bold" data-i18n="lbl_employees">従業員数</label><input type="number" id="acc-employees" class="w-32 border p-2 rounded"></div>
@@ -130,32 +131,37 @@
                 </div>
                 <textarea id="acc-remarks" class="w-full border p-2 rounded h-20" data-i18n-placeholder="lbl_remarks"></textarea>
             </div>
-            <div class="bg-gray-50 p-4 border-t flex justify-center"><button onclick="saveAccount()" class="bg-blue-500 text-white px-12 py-2 rounded font-bold" data-i18n="btn_save">保存</button></div>
+            <div class="bg-gray-50 p-4 border-t flex justify-center"><button onclick="saveAccount()" class="bg-blue-500 text-white px-12 py-2 rounded font-bold shadow-sm" data-i18n="btn_save">保存</button></div>
         </div>
     </div>
 
     <div id="modal-opp" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-[100]">
-        <div class="bg-white rounded shadow-2xl w-[700px] max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded shadow-2xl w-[750px] max-h-[90vh] overflow-y-auto">
             <div class="bg-gray-100 p-4 font-bold border-b sticky top-0" data-i18n="btn_new_opp">新規商談登録</div>
             <div class="p-8 space-y-5">
                 <input type="hidden" id="opp-edit-index">
-                <div><label class="block font-bold mb-1 required" data-i18n="lbl_opp_name">商談名</label><input type="text" id="opp-name" class="w-full border p-2 rounded"></div>
-                <div class="grid grid-cols-2 gap-4">
+                <div><label class="block font-bold mb-1 required" data-i18n="lbl_opp_name">商談名</label><input type="text" id="opp-name" class="w-full border p-2 rounded focus:border-blue-500 outline-none"></div>
+                
+                <div class="grid grid-cols-2 gap-x-6 gap-y-4">
                     <div><label class="block font-bold mb-1 required" data-i18n="th_acc_name">取引先</label><select id="opp-acc-id" class="w-full border p-2 rounded"></select></div>
-                    <div><label class="block font-bold mb-1" data-i18n="lbl_opp_amount">金額 (円)</label><input type="number" id="opp-amount" class="w-full border p-2 rounded"></div>
-                    <div><label class="block font-bold mb-1" data-i18n="lbl_opp_stage">ステージ</label>
+                    <div><label class="block font-bold mb-1" data-i18n="lbl_opp_amount">金額 (円)</label><input type="number" id="opp-amount" class="w-full border p-2 rounded" placeholder="¥"></div>
+                    <div><label class="block font-bold mb-1" data-i18n="lbl_opp_stage">フェーズ</label>
                         <select id="opp-stage" class="w-full border p-2 rounded">
                             <option>1. 見込み把握</option><option>2. 提案</option><option>3. 最終交渉</option><option>4. 受注</option>
                         </select></div>
                     <div><label class="block font-bold mb-1" data-i18n="lbl_opp_date">クローズ予定日</label><input type="date" id="opp-date" class="w-full border p-2 rounded"></div>
+                    
+                    <div><label class="block font-bold mb-1" data-i18n="lbl_shipping">出荷先</label><input type="text" id="opp-shipping" class="w-full border p-2 rounded"></div>
+                    <div><label class="block font-bold mb-1" data-i18n="lbl_cust_ref">得意先参照</label><input type="text" id="opp-cust-ref" class="w-full border p-2 rounded"></div>
                 </div>
+
                 <div class="bg-blue-50 p-4 rounded flex items-center space-x-4">
                     <label class="flex items-center font-bold cursor-pointer"><input type="checkbox" id="opp-comp-check" class="mr-2" onchange="toggleCompetitor(this.checked)"><span data-i18n="lbl_competitor">競合有り</span></label>
-                    <input type="text" id="opp-comp-name" class="flex-1 border p-2 rounded" disabled data-i18n-placeholder="lbl_comp_name">
+                    <input type="text" id="opp-comp-name" class="flex-1 border p-2 rounded shadow-inner" disabled data-i18n-placeholder="lbl_comp_name">
                 </div>
                 <textarea id="opp-memo" class="w-full border p-2 rounded h-20" data-i18n-placeholder="lbl_opp_memo"></textarea>
             </div>
-            <div class="bg-gray-50 p-4 border-t flex justify-center"><button onclick="saveOpp()" class="bg-blue-500 text-white px-12 py-2 rounded font-bold" data-i18n="btn_save">保存</button></div>
+            <div class="bg-gray-50 p-4 border-t flex justify-center"><button onclick="saveOpp()" class="bg-blue-500 text-white px-12 py-2 rounded font-bold shadow-md" data-i18n="btn_save">保存</button></div>
         </div>
     </div>
 
@@ -164,6 +170,7 @@
     <script>
         // --- 設定・初期データ ---
         const DEFAULT_ACCOUNTS = [
+            { name: "ウォークスルー株式会社", industry: "IT", employees: 50, zip:"103-0022", pref:"東京都", city:"中央区", street:"2-1", remarks:"トレーニング用企業" },
             { name: "サンプルテクノロジー株式会社", industry: "IT", employees: 1250, zip:"100-0001", pref:"東京都", city:"千代田区", street:"1-1", remarks:"" },
             { name: "未来ソリューションズ", industry: "IT", employees: 450, zip:"530-0001", pref:"大阪府", city:"北区", street:"2-2", remarks:"" },
             { name: "エコアース・マニュファクチャリング", industry: "Mfg", employees: 8900, zip:"471-0001", pref:"愛知県", city:"豊田市", street:"3-3", remarks:"" },
@@ -173,52 +180,48 @@
             { name: "スターライト・マーケティング", industry: "Service", employees: 120, zip:"106-0001", pref:"東京都", city:"港区", street:"7-7", remarks:"" },
             { name: "サン食品株式会社", industry: "Mfg", employees: 1500, zip:"650-0001", pref:"兵庫県", city:"中央区", street:"8-8", remarks:"" },
             { name: "日本インフラ通信", industry: "IT", employees: 3000, zip:"101-0001", pref:"東京都", city:"千代田区", street:"9-9", remarks:"" },
-            { name: "スカイ建設株式会社", industry: "Mfg", employees: 2200, zip:"810-0001", pref:"福岡県", city:"博多区", street:"10-10", remarks:"" },
-            { name: "ライトハウス・デザイン", industry: "Service", employees: 45, zip:"150-0001", pref:"東京都", city:"目黒区", street:"11", remarks:"" },
-            { name: "銀河生命保険", industry: "Service", employees: 12000, zip:"100-0001", pref:"東京都", city:"新宿区", street:"12", remarks:"" },
-            { name: "アーバン不動産", industry: "Retail", employees: 310, zip:"541-0001", pref:"大阪府", city:"中央区", street:"13", remarks:"" },
-            { name: "テック・エデュケーション", industry: "IT", employees: 90, zip:"460-0001", pref:"愛知県", city:"中区", street:"14", remarks:"" },
-            { name: "バイオ・ヘルステック", industry: "Mfg", employees: 180, zip:"812-0001", pref:"福岡県", city:"東区", street:"15", remarks:"" }
+            { name: "スカイ建設株式会社", industry: "Mfg", employees: 2200, zip:"810-0001", pref:"福岡県", city:"博多区", street:"10-10", remarks:"" }
         ];
 
         const DEFAULT_OPPS = [
-            { name: "基幹システムのリプレイス", acc: "サンプルテクノロジー株式会社", amount: 5500000, stage: "2. 提案", date: "2026-06-30", comp: true, compName: "ライバル社", memo: "" },
-            { name: "AIチャットボット導入", acc: "デジタルフロンティア・ラボ", amount: 800000, stage: "2. 提案", date: "2026-04-28", comp: false, compName: "", memo: "" }
+            { name: "基幹システムのリプレイス", acc: "ウォークスルー株式会社", amount: 5500000, stage: "2. 提案", date: "2026-06-30", comp: true, compName: "ライバル社", memo: "", shipping: "東京都中央区倉庫", custRef: "PO-12345" },
+            { name: "AIチャットボット導入", acc: "デジタルフロンティア・ラボ", amount: 800000, stage: "2. 提案", date: "2026-04-28", comp: false, compName: "", memo: "", shipping: "", custRef: "" }
         ];
 
-        // LocalStorageからの読み込み
-        let accounts = JSON.parse(localStorage.getItem('crm_v12_acc')) || DEFAULT_ACCOUNTS;
-        let opps = JSON.parse(localStorage.getItem('crm_v12_opp')) || DEFAULT_OPPS;
+        let accounts = JSON.parse(localStorage.getItem('crm_v13_acc')) || DEFAULT_ACCOUNTS;
+        let opps = JSON.parse(localStorage.getItem('crm_v13_opp')) || DEFAULT_OPPS;
         let currentLang = 'ja';
 
         const translations = {
             ja: {
-                app_title: "顧客管理システム V12", nav_home: "ポータル", nav_accounts: "取引先一覧", nav_opps: "商談管理",
+                app_title: "顧客管理システム V13", nav_home: "ポータル", nav_accounts: "取引先一覧", nav_opps: "商談管理",
                 acc_title: "取引先一覧", btn_new_acc: "+ 新規レコード追加", th_acc_name: "取引先名",
                 lbl_industry: "業種", lbl_employees: "従業員数", lbl_pref: "都道府県", lbl_address: "住所",
                 lbl_zip: "郵便番号", lbl_city: "市区町村", lbl_street: "番地", lbl_remarks: "備考",
-                btn_new_opp: "新規商談登録", lbl_opp_name: "商談名", lbl_opp_amount: "金額 (円)",
-                lbl_opp_stage: "フェーズ", lbl_opp_date: "予定日", lbl_competitor: "競合有り",
+                btn_new_opp: "新規商談登録", lbl_opp_name: "商談名", lbl_opp_amount: "金額",
+                lbl_opp_stage: "フェーズ", lbl_opp_date: "クローズ予定日", lbl_competitor: "競合有り",
                 lbl_comp_name: "競合名", lbl_opp_memo: "商談メモ", btn_save: "保存", success_msg: "保存しました。",
-                dash_welcome: "ダッシュボードへようこそ", dash_info: "LocalStorageによりデータはブラウザに保持されます。",
-                modal_acc_title: "レコードの編集", opt_it: "IT", opt_mfg: "製造業", opt_service: "サービス", btn_reset: "データを初期化"
+                dash_welcome: "ダッシュボード", dash_info: "出荷先・得意先参照フィールドを追加しました。ウォークスルー(株)を初期データに登録済。",
+                modal_acc_title: "レコードの編集", opt_it: "IT", opt_mfg: "製造業", opt_retail: "卸売・小売", opt_service: "サービス",
+                btn_reset: "データを初期化", lbl_shipping: "出荷先", lbl_cust_ref: "得意先参照"
             },
             en: {
-                app_title: "CRM System V12", nav_home: "Portal", nav_accounts: "Accounts", nav_opps: "Opportunities",
+                app_title: "CRM System V13", nav_home: "Portal", nav_accounts: "Accounts", nav_opps: "Opportunities",
                 acc_title: "Account List", btn_new_acc: "+ Add New Record", th_acc_name: "Account Name",
                 lbl_industry: "Industry", lbl_employees: "Employees", lbl_pref: "Prefecture", lbl_address: "Address",
                 lbl_zip: "Zip Code", lbl_city: "City", lbl_street: "Street", lbl_remarks: "Remarks",
-                btn_new_opp: "New Opportunity", lbl_opp_name: "Opp Name", lbl_opp_amount: "Amount (JPY)",
+                btn_new_opp: "New Opportunity", lbl_opp_name: "Opp Name", lbl_opp_amount: "Amount",
                 lbl_opp_stage: "Stage", lbl_opp_date: "Close Date", lbl_competitor: "Competitor",
                 lbl_comp_name: "Competitor Name", lbl_opp_memo: "Memo", btn_save: "Save", success_msg: "Saved Successfully.",
-                dash_welcome: "Welcome to Dashboard", dash_info: "Data is kept in your browser via LocalStorage.",
-                modal_acc_title: "Edit Record", opt_it: "IT/Telecom", opt_mfg: "Manufacturing", opt_service: "Service", btn_reset: "Reset Data"
+                dash_welcome: "Welcome", dash_info: "Added Ship-to and Cust Ref fields. Walkthrough Co. added to defaults.",
+                modal_acc_title: "Edit Record", opt_it: "IT/Telecom", opt_mfg: "Manufacturing", opt_retail: "Retail", opt_service: "Service",
+                btn_reset: "Reset Data", lbl_shipping: "Ship-to Party", lbl_cust_ref: "Customer Reference"
             }
         };
 
         // --- コア機能 ---
         function render() {
-            // 取引先テーブル
+            // 取引先
             document.getElementById('account-table-body').innerHTML = accounts.map((a, i) => `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-2 border text-center"><button onclick="openAccountModal(${i})" class="btn-cy-edit">Edit</button></td>
@@ -229,7 +232,7 @@
                 </tr>
             `).join('');
 
-            // 商談テーブル
+            // 商談
             document.getElementById('opp-table-body').innerHTML = opps.map((o, i) => `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-2 border text-center"><button onclick="openOppModal(${i})" class="btn-cy-edit">Edit</button></td>
@@ -237,11 +240,10 @@
                     <td class="p-3 border text-blue-600 font-medium">${o.acc}</td>
                     <td class="p-3 border text-right">¥${Number(o.amount).toLocaleString()}</td>
                     <td class="p-3 border">${o.stage}</td>
-                    <td class="p-3 border">${o.date}</td>
+                    <td class="p-3 border text-gray-500">${o.date}</td>
                 </tr>
             `).join('');
 
-            // 取引先プルダウン
             const sel = document.getElementById('opp-acc-id');
             const placeholder = currentLang === 'ja' ? '--選択してください--' : '--Select--';
             sel.innerHTML = `<option value="">${placeholder}</option>` + accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
@@ -262,19 +264,18 @@
         }
 
         function saveToLocal() {
-            localStorage.setItem('crm_v12_acc', JSON.stringify(accounts));
-            localStorage.setItem('crm_v12_opp', JSON.stringify(opps));
+            localStorage.setItem('crm_v13_acc', JSON.stringify(accounts));
+            localStorage.setItem('crm_v13_opp', JSON.stringify(opps));
         }
 
         function resetData() {
             if(confirm("データを初期状態に戻しますか？")) {
-                localStorage.removeItem('crm_v12_acc');
-                localStorage.removeItem('crm_v12_opp');
+                localStorage.clear();
                 location.reload();
             }
         }
 
-        // --- モーダル・タブ制御 ---
+        // --- 制御系 ---
         function switchTab(t) {
             ['home','accounts','opps'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
             ['home','accounts','opps'].forEach(v => document.getElementById('tab-'+v).classList.remove('active'));
@@ -306,7 +307,7 @@
                 city: document.getElementById('acc-city').value, street: document.getElementById('acc-street').value,
                 remarks: document.getElementById('acc-remarks').value
             };
-            if(!newData.name) return alert("Account Name is required");
+            if(!newData.name) return;
             if(idx === "") accounts.unshift(newData); else accounts[idx] = newData;
             saveToLocal(); closeModal('modal-account'); showToast(); render();
         }
@@ -314,7 +315,7 @@
         function openOppModal(index = null) {
             const isEdit = index !== null;
             document.getElementById('opp-edit-index').value = isEdit ? index : "";
-            const data = isEdit ? opps[index] : { name:"", acc:"", amount:0, stage:"", date:"", comp:false, compName:"", memo:"" };
+            const data = isEdit ? opps[index] : { name:"", acc:"", amount:0, stage:"", date:"", comp:false, compName:"", memo:"", shipping:"", custRef:"" };
             document.getElementById('opp-name').value = data.name;
             document.getElementById('opp-acc-id').value = data.acc;
             document.getElementById('opp-amount').value = data.amount;
@@ -324,6 +325,8 @@
             document.getElementById('opp-comp-name').value = data.compName;
             document.getElementById('opp-comp-name').disabled = !data.comp;
             document.getElementById('opp-memo').value = data.memo;
+            document.getElementById('opp-shipping').value = data.shipping;
+            document.getElementById('opp-cust-ref').value = data.custRef;
             document.getElementById('modal-opp').classList.remove('hidden');
         }
 
@@ -333,9 +336,10 @@
                 name: document.getElementById('opp-name').value, acc: document.getElementById('opp-acc-id').value,
                 amount: parseInt(document.getElementById('opp-amount').value || 0), stage: document.getElementById('opp-stage').value,
                 date: document.getElementById('opp-date').value, comp: document.getElementById('opp-comp-check').checked,
-                compName: document.getElementById('opp-comp-name').value, memo: document.getElementById('opp-memo').value
+                compName: document.getElementById('opp-comp-name').value, memo: document.getElementById('opp-memo').value,
+                shipping: document.getElementById('opp-shipping').value, custRef: document.getElementById('opp-cust-ref').value
             };
-            if(!newData.name || !newData.acc) return alert("Name and Account are required");
+            if(!newData.name || !newData.acc) return;
             if(idx === "") opps.unshift(newData); else opps[idx] = newData;
             saveToLocal(); closeModal('modal-opp'); showToast(); render();
         }
