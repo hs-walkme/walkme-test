@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ルーレットでポン</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes fall {
+            0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes ping-slow {
+            75%, 100% { transform: scale(1.5); opacity: 0; }
+        }
+        @keyframes zoom-in-90 {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fade-in {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        @keyframes slide-in-from-left-4 {
+            0% { transform: translateX(-1rem); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        .animate-ping-slow {
+            animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        .animate-in-zoom {
+            animation: zoom-in-90 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .animate-in-fade {
+            animation: fade-in 0.2s ease-out forwards;
+        }
+        .animate-in-slide {
+            animation: slide-in-from-left-4 0.3s ease-out forwards;
+        }
+        @keyframes flip-board {
+            0% { transform: perspective(1000px) rotateY(0); }
+            50% { transform: perspective(1000px) rotateY(90deg); }
+            100% { transform: perspective(1000px) rotateY(0); }
+        }
+        .animate-flip {
+            animation: flip-board 0.6s ease-in-out;
+        }
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 flex flex-col font-sans text-gray-800">
+
+    <header class="bg-gradient-to-r from-blue-700 to-blue-500 text-white p-5 shadow-md">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-2 group relative">
+                <i class="fas fa-trophy text-yellow-300 shrink-0"></i>
+                <span id="appTitle" contenteditable="true" class="outline-none border-b-2 border-transparent focus:border-white/70 hover:bg-white/10 px-2 py-1 rounded transition-colors cursor-text whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] sm:max-w-[300px] md:max-w-[500px]" spellcheck="false" title="クリックしてタイトルを編集">ルーレットでポン</span>
+                <i class="fas fa-pencil-alt text-base opacity-60 md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer shrink-0 ml-1" onclick="document.getElementById('appTitle').focus()"></i>
+            </h1>
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button id="toggleSoundBtn" class="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-sm font-semibold transition border bg-white/20 border-white/30 hover:bg-white/30" title="サウンドのON/OFFを切り替える">
+                    <i class="fas fa-volume-up" id="soundIcon"></i>
+                    <span id="soundText" class="hidden sm:inline">サウンド ON</span>
+                </button>
+                <button id="toggleFbBtn" class="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-sm font-semibold transition border bg-white/20 border-white/30 hover:bg-white/30" title="FB抽選のON/OFFを切り替える">
+                    <i class="fas fa-comment-dots" id="fbIcon"></i>
+                    <span id="fbText" class="hidden sm:inline">FB抽選 ON</span>
+                </button>
+                <span class="bg-white/20 px-4 py-1.5 rounded-full text-sm font-semibold hidden lg:inline-block">
+                    発表順ルーレット
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8 flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto w-full">
+        <!-- 左側：ルーレットエリア -->
+        <div class="flex-1 flex flex-col items-center justify-center bg-white p-8 rounded-3xl shadow-lg border border-gray-100">
+            
+            <div class="relative w-80 h-80 md:w-96 md:h-96">
+                <!-- 選択用の矢印 -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 w-0 h-0 border-l-[16px] border-r-[16px] border-t-[32px] border-l-transparent border-r-transparent border-t-red-500 z-20 filter drop-shadow-lg"></div>
+                
+                <!-- フリップアニメーション用コンテナ -->
+                <div id="rouletteFlipContainer" class="w-full h-full">
+                    <!-- ルーレット盤面 -->
+                    <div id="rouletteWheel" class="w-full h-full rounded-full border-[6px] border-white shadow-2xl overflow-hidden relative bg-gray-200 transition-transform" style="transition-duration: 5s; transition-timing-function: cubic-bezier(0.15, 0.85, 0.15, 1);">
+                        <!-- JavaScriptで参加者が描画されます -->
+                    </div>
+                </div>
+                
+                <!-- スタートボタン -->
+                <button id="spinBtn" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 md:w-24 md:h-24 bg-white rounded-full shadow-xl flex flex-col items-center justify-center text-blue-600 hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-4 border-blue-100 z-10">
+                    <i class="fas fa-play text-3xl md:text-4xl ml-1"></i>
+                </button>
+            </div>
+
+            <div class="mt-10 text-center w-full">
+                <div id="statusMessageContainer">
+                    <p id="statusMessage" class="text-gray-500 font-medium">読み込み中...</p>
+                </div>
+                <div class="flex justify-center gap-4 mt-6">
+                    <button id="shuffleBtn" class="flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-blue-200 text-blue-600 rounded-full font-bold hover:bg-blue-50 transition disabled:opacity-50" title="盤面の配置をランダムに並び替えます">
+                        <i class="fas fa-random"></i>
+                        シャッフル
+                    </button>
+                    <button id="resetRouletteBtn" class="flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-gray-200 text-gray-600 rounded-full font-bold hover:bg-gray-50 hover:text-gray-800 disabled:opacity-50 transition">
+                        <i class="fas fa-redo"></i>
+                        リセット
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：サイドバー（リスト＆設定） -->
+        <div class="w-full lg:w-96 flex flex-col gap-6">
+            
+            <!-- 発表順番リスト -->
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 flex-1 min-h-[300px] flex flex-col">
+                <h2 class="text-xl font-extrabold mb-5 flex items-center justify-between text-gray-800 border-b pb-3">
+                    <div class="flex items-center gap-2">
+                        発表順リスト
+                        <span id="orderCountBadge" class="bg-blue-100 text-blue-700 text-sm py-1 px-3 rounded-full">0 人決定</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button id="expandListBtn" class="text-gray-400 hover:text-blue-600 transition p-1" title="リストを拡大表示する">
+                            <i class="fas fa-expand-arrows-alt text-lg"></i>
+                        </button>
+                        <button id="clearAllBtn" class="hidden text-sm flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition font-bold" title="発表順をすべてクリアして最初からやり直す">
+                            <i class="fas fa-redo text-xs"></i>全クリア
+                        </button>
+                    </div>
+                </h2>
+                
+                <ul id="orderList" class="space-y-3 overflow-y-auto max-h-[40vh] pr-2 flex-1">
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 py-10">
+                        <i class="fas fa-trophy text-4xl mb-3 opacity-20"></i>
+                        <p>まだ誰も選ばれていません</p>
+                    </div>
+                </ul>
+            </div>
+
+            <!-- メンバー設定エリア -->
+            <div class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                    <i class="fas fa-cog text-gray-500"></i>
+                    メンバー管理
+                </h2>
+                
+                <div class="bg-gray-50 p-4 rounded-xl mb-5 border border-gray-100 shadow-sm">
+                    <div class="flex p-1 mb-4 bg-gray-200/50 rounded-lg">
+                        <button id="tabPresetBtn" class="flex-1 py-1.5 text-sm font-bold rounded-md transition-all bg-white text-blue-600 shadow-sm">デフォルトから</button>
+                        <button id="tabCustomBtn" class="flex-1 py-1.5 text-sm font-bold rounded-md transition-all text-gray-500 hover:text-gray-700">個別追加</button>
+                    </div>
+
+                    <form id="addParticipantForm" class="flex flex-col gap-3">
+                        <div id="presetInputGroup" class="block">
+                            <!-- required 属性を削除しました -->
+                            <select id="presetSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="">追加するメンバーを選択...</option>
+                            </select>
+                        </div>
+
+                        <div id="customInputGroup" class="hidden flex-col gap-3">
+                            <input type="text" id="customNameInput" placeholder="名前 (必須)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            <input type="url" id="customUrlInput" placeholder="顔写真のURL (任意)" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        </div>
+
+                        <!-- 色選択UI -->
+                        <div class="mt-1">
+                            <label class="text-xs font-bold text-gray-500 mb-1.5 block">ルーレットの色 (被りなし)</label>
+                            <div id="colorPickerContainer" class="flex flex-wrap gap-2">
+                                <!-- JavaScriptで生成 -->
+                            </div>
+                        </div>
+
+                        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer mt-1">
+                            <input type="checkbox" id="narrowCheckbox" class="rounded text-blue-500 focus:ring-blue-500 w-4 h-4">
+                            マス目を細くする（当たる確率ダウン）
+                        </label>
+                        
+                        <button type="submit" id="addSubmitBtn" class="flex items-center justify-center gap-2 bg-gray-800 text-white py-2 rounded-lg font-bold hover:bg-gray-700 transition mt-1 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <i class="fas fa-user-plus"></i>
+                            追加する
+                        </button>
+                    </form>
+                </div>
+
+                <div class="max-h-40 overflow-y-auto pr-2">
+                    <ul id="participantList" class="space-y-2">
+                        <!-- JavaScriptで生成 -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 当選時のポップアップモーダル -->
+    <div id="winnerModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div id="confettiContainer" class="fixed inset-0 pointer-events-none z-40 overflow-hidden"></div>
+        
+        <div class="bg-white p-8 md:p-12 rounded-[2rem] shadow-2xl flex flex-col items-center transform transition-all animate-in-zoom relative z-50 text-center max-w-sm w-full border-4 border-blue-500">
+            <span class="text-blue-500 font-bold tracking-widest text-sm mb-2">NEXT SPEAKER</span>
+            <h2 class="text-2xl md:text-3xl font-black text-gray-800 mb-6">次の発表者は...</h2>
+            
+            <div class="relative">
+                <div class="absolute inset-0 bg-blue-500 rounded-full animate-ping-slow opacity-20"></div>
+                <img id="winnerImage" src="" alt="Winner" class="w-32 h-32 md:w-40 md:h-40 rounded-full border-8 border-white shadow-xl object-cover mb-4 relative z-10 bg-white">
+            </div>
+            
+            <p id="winnerName" class="text-3xl md:text-4xl font-black text-blue-600 mb-6 drop-shadow-sm">Name</p>
+            
+            <!-- FB担当表示エリア -->
+            <div id="fbDisplayArea" class="w-full bg-yellow-50 border-2 border-yellow-100 rounded-xl p-3 mb-8 transform transition-all">
+                <p class="text-xs font-bold text-yellow-600 mb-2 flex items-center justify-center gap-1">
+                    <i class="fas fa-comment-dots"></i> フィードバック担当
+                </p>
+                <div class="flex items-center justify-center gap-3">
+                    <img id="feedbackerImage" src="" alt="FB" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover bg-white">
+                    <span id="feedbackerName" class="text-xl font-bold text-gray-800">抽選中...</span>
+                </div>
+            </div>
+            
+            <div class="flex gap-3 w-full">
+                <button id="redoBtn" class="flex-[1] py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold text-lg md:text-xl hover:bg-gray-200 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    やり直す
+                </button>
+                <button id="confirmWinnerBtn" class="flex-[2] py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl font-bold text-lg md:text-xl hover:from-blue-700 hover:to-blue-600 transition shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    決定！
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- リセット確認モーダル -->
+    <div id="resetConfirmModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in-fade">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">本当にリセットしますか？</h3>
+            <p class="text-gray-600 mb-8 text-sm">これまでの発表順はすべてクリアされ、最初からやり直しになります。</p>
+            <div class="flex gap-3">
+                <button id="cancelResetBtn" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">
+                    キャンセル
+                </button>
+                <button id="executeResetBtn" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition shadow-lg">
+                    リセットする
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メンバー削除確認モーダル -->
+    <div id="removeConfirmModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in-fade">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">メンバーを削除しますか？</h3>
+            <p class="text-gray-600 mb-8 text-sm">現在ルーレットが進行中です。<br>削除すると発表順などがおかしくなる可能性があります。</p>
+            <div class="flex gap-3">
+                <button id="cancelRemoveBtn" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">
+                    キャンセル
+                </button>
+                <button id="executeRemoveBtn" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition shadow-lg">
+                    削除する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メンバー編集モーダル -->
+    <div id="editParticipantModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in-fade">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl max-w-sm w-full text-left transform transition-all animate-in-zoom">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">メンバーの編集</h3>
+            <form id="editParticipantForm" class="flex flex-col gap-3">
+                <input type="text" id="editNameInput" placeholder="名前 (必須)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" required>
+                <input type="url" id="editUrlInput" placeholder="顔写真のURL (任意)" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                
+                <div class="mt-2">
+                    <label class="text-xs font-bold text-gray-500 mb-1.5 block">ルーレットの色</label>
+                    <div id="editColorPickerContainer" class="flex flex-wrap gap-2">
+                        <!-- JavaScriptで生成 -->
+                    </div>
+                </div>
+
+                <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer mt-2">
+                    <input type="checkbox" id="editNarrowCheckbox" class="rounded text-blue-500 focus:ring-blue-500 w-4 h-4">
+                    マス目を細くする（当たる確率ダウン）
+                </label>
+                
+                <div class="flex gap-3 mt-5">
+                    <button type="button" id="cancelEditBtn" class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-md">
+                        保存する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 発表順リスト拡大表示モーダル -->
+    <div id="expandedListModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-8 animate-in-fade">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-full max-h-[90vh] flex flex-col overflow-hidden transform transition-all animate-in-zoom">
+            <div class="p-6 border-b flex items-center justify-between bg-gray-50 shadow-sm relative z-10">
+                <h2 class="text-2xl md:text-3xl font-black text-gray-800 flex items-center gap-3">
+                    <i class="fas fa-list-ol text-blue-500"></i> 発表順リスト
+                    <span id="expandedOrderCountBadge" class="bg-blue-100 text-blue-700 text-lg py-1 px-4 rounded-full ml-2">0 人決定</span>
+                </h2>
+                <button id="closeExpandedListBtn" class="w-10 h-10 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full flex items-center justify-center transition font-bold text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-slate-50">
+                <div id="expandedOrderList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- JavaScriptで生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 状態管理 ---
+        let allParticipants = [];
+        let remaining = [];
+        let order = [];
+        let isSpinning = false;
+        let currentRotation = 0;
+        let isSoundEnabled = true;
+        let isFbEnabled = true; // FB機能のON/OFF状態
+        let addMode = 'preset'; // 'preset' or 'custom'
+        let selectedColor = '';
+        let participantToRemoveId = null;
+        let participantToEditId = null;
+        let editSelectedColor = '';
+        let currentWinner = null;
+        let currentFeedbacker = null;
+        let fbInterval = null;
+
+        // --- データ定義 ---
+        const getAvatar = (name) => `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffdfbf,ffd5dc`;
+
+        const ROULETTE_COLORS = [
+            { code: '#FF6B6B', name: 'コーラルレッド' }, { code: '#4ECDC4', name: 'ターコイズ' },
+            { code: '#45B7D1', name: 'スカイブルー' }, { code: '#FFA07A', name: 'ライトサーモン' },
+            { code: '#98D8C8', name: 'ミントグリーン' }, { code: '#F06292', name: 'ピンク' },
+            { code: '#AED581', name: 'ライトグリーン' }, { code: '#FFD54F', name: 'イエロー' },
+            { code: '#4DB6AC', name: 'ティール' }, { code: '#7986CB', name: 'インディゴ' },
+            { code: '#BA68C8', name: 'パープル' }, { code: '#4FC3F7', name: 'ライトブルー' },
+            { code: '#81C784', name: 'グリーン' }, { code: '#FF8A65', name: 'オレンジ' },
+            { code: '#DCE775', name: 'ライム' }, { code: '#A1887F', name: 'ブラウン' },
+            { code: '#90A4AE', name: 'ブルーグレー' }, { code: '#E57373', name: 'ライトレッド' },
+            { code: '#64B5F6', name: 'ソフトブルー' }, { code: '#FFF176', name: 'ソフトイエロー' },
+        ];
+
+        const PREDEFINED_MEMBERS = [
+            { id: 'pre1', name: 'ユーザー#1', image: getAvatar('ユーザー#1'), weight: 0.15 },
+            { id: 'pre2', name: 'ユーザー#2', image: getAvatar('ユーザー#2') },
+            { id: 'pre3', name: 'ユーザー#3', image: getAvatar('ユーザー#3') },
+            { id: 'pre4', name: 'ユーザー#4', image: getAvatar('ユーザー#4') },
+            { id: 'pre5', name: 'ユーザー#5', image: getAvatar('ユーザー#5') },
+            { id: 'pre6', name: 'ユーザー#6', image: getAvatar('ユーザー#6') },
+            { id: 'pre7', name: 'ユーザー#7', image: getAvatar('ユーザー#7') },
+            { id: 'pre8', name: 'ユーザー#8', image: getAvatar('ユーザー#8') },
+        ];
+
+        // --- DOM要素取得 ---
+        const elements = {
+            toggleSoundBtn: document.getElementById('toggleSoundBtn'),
+            soundIcon: document.getElementById('soundIcon'),
+            soundText: document.getElementById('soundText'),
+            toggleFbBtn: document.getElementById('toggleFbBtn'),
+            fbIcon: document.getElementById('fbIcon'),
+            fbText: document.getElementById('fbText'),
+            rouletteFlipContainer: document.getElementById('rouletteFlipContainer'),
+            rouletteWheel: document.getElementById('rouletteWheel'),
+            spinBtn: document.getElementById('spinBtn'),
+            statusMessage: document.getElementById('statusMessage'),
+            statusMessageContainer: document.getElementById('statusMessageContainer'),
+            shuffleBtn: document.getElementById('shuffleBtn'),
+            resetRouletteBtn: document.getElementById('resetRouletteBtn'),
+            orderCountBadge: document.getElementById('orderCountBadge'),
+            clearAllBtn: document.getElementById('clearAllBtn'),
+            orderList: document.getElementById('orderList'),
+            tabPresetBtn: document.getElementById('tabPresetBtn'),
+            tabCustomBtn: document.getElementById('tabCustomBtn'),
+            addParticipantForm: document.getElementById('addParticipantForm'),
+            presetInputGroup: document.getElementById('presetInputGroup'),
+            customInputGroup: document.getElementById('customInputGroup'),
+            presetSelect: document.getElementById('presetSelect'),
+            customNameInput: document.getElementById('customNameInput'),
+            customUrlInput: document.getElementById('customUrlInput'),
+            colorPickerContainer: document.getElementById('colorPickerContainer'),
+            narrowCheckbox: document.getElementById('narrowCheckbox'),
+            addSubmitBtn: document.getElementById('addSubmitBtn'),
+            participantList: document.getElementById('participantList'),
+            
+            // モーダル関連
+            winnerModal: document.getElementById('winnerModal'),
+            confettiContainer: document.getElementById('confettiContainer'),
+            winnerImage: document.getElementById('winnerImage'),
+            winnerName: document.getElementById('winnerName'),
+            fbDisplayArea: document.getElementById('fbDisplayArea'),
+            feedbackerImage: document.getElementById('feedbackerImage'),
+            feedbackerName: document.getElementById('feedbackerName'),
+            redoBtn: document.getElementById('redoBtn'),
+            confirmWinnerBtn: document.getElementById('confirmWinnerBtn'),
+            
+            resetConfirmModal: document.getElementById('resetConfirmModal'),
+            cancelResetBtn: document.getElementById('cancelResetBtn'),
+            executeResetBtn: document.getElementById('executeResetBtn'),
+            
+            removeConfirmModal: document.getElementById('removeConfirmModal'),
+            cancelRemoveBtn: document.getElementById('cancelRemoveBtn'),
+            executeRemoveBtn: document.getElementById('executeRemoveBtn'),
+            
+            // 編集モーダル関連
+            editParticipantModal: document.getElementById('editParticipantModal'),
+            editParticipantForm: document.getElementById('editParticipantForm'),
+            editNameInput: document.getElementById('editNameInput'),
+            editUrlInput: document.getElementById('editUrlInput'),
+            editColorPickerContainer: document.getElementById('editColorPickerContainer'),
+            editNarrowCheckbox: document.getElementById('editNarrowCheckbox'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'),
+
+            // 拡大表示モーダル関連
+            expandListBtn: document.getElementById('expandListBtn'),
+            expandedListModal: document.getElementById('expandedListModal'),
+            closeExpandedListBtn: document.getElementById('closeExpandedListBtn'),
+            expandedOrderList: document.getElementById('expandedOrderList'),
+            expandedOrderCountBadge: document.getElementById('expandedOrderCountBadge'),
+
+            appTitle: document.getElementById('appTitle'),
+        };
+
+        // --- オーディオ関連 ---
+        let audioCtx = null;
+        const initAudio = () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        };
+
+        const playTick = () => {
+            if (!audioCtx || !isSoundEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        };
+
+        const playFanfare = () => {
+            if (!audioCtx || !isSoundEnabled) return;
+            const now = audioCtx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                
+                const startTime = now + i * 0.12; 
+                const duration = i === notes.length - 1 ? 1.5 : 0.1;
+                
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.1, startTime + 0.02);
+                gain.gain.setValueAtTime(0.1, startTime + duration - 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            });
+        };
+
+        const startSpinAnimationSound = () => {
+            let count = 0;
+            const totalTicks = 45;
+            
+            const tick = () => {
+                if (count >= totalTicks) return;
+                playTick();
+                count++;
+                const progress = count / totalTicks;
+                const delay = 20 + Math.pow(progress, 3.5) * 400; 
+                setTimeout(tick, delay);
+            };
+            tick();
+        };
+
+        // --- UI更新関数 ---
+        const updateUI = () => {
+            renderRoulette();
+            renderStatus();
+            renderOrderList();
+            renderParticipantList();
+            updateFormState();
+            
+            elements.spinBtn.disabled = isSpinning || remaining.length === 0;
+            elements.shuffleBtn.disabled = isSpinning || remaining.length <= 1;
+            elements.resetRouletteBtn.disabled = isSpinning || order.length === 0;
+            elements.clearAllBtn.style.display = (order.length > 0 && !isSpinning) ? 'flex' : 'none';
+        };
+
+        const renderRoulette = () => {
+            const wheel = elements.rouletteWheel;
+            wheel.innerHTML = '';
+
+            if (remaining.length === 0) {
+                wheel.style.background = '#e5e7eb';
+                return;
+            }
+
+            const totalWeight = remaining.reduce((sum, p) => sum + (p.weight || 1), 0);
+            let currentAngle = 0;
+            
+            const segments = remaining.map(p => {
+                const weight = p.weight || 1;
+                const angle = (weight / totalWeight) * 360;
+                const start = currentAngle;
+                const end = currentAngle + angle;
+                const center = currentAngle + angle / 2;
+                currentAngle += angle;
+                return { ...p, angle, start, end, center };
+            });
+
+            const gradientStops = segments.map((seg, i) => {
+                const color = seg.color || ROULETTE_COLORS[i % ROULETTE_COLORS.length].code;
+                return `${color} ${seg.start}deg ${seg.end}deg`;
+            }).join(', ');
+            
+            wheel.style.background = `conic-gradient(${gradientStops})`;
+
+            const textSize = remaining.length > 10 ? 'text-xs' : 'text-sm';
+
+            segments.forEach(seg => {
+                const isNarrow = seg.angle < 20;
+                const div = document.createElement('div');
+                div.className = 'absolute top-0 left-1/2 origin-bottom flex flex-col items-center pt-4 md:pt-6';
+                div.style.height = '50%';
+                div.style.transform = `translateX(-50%) rotate(${seg.center}deg)`;
+                
+                const imgSizeClass = isNarrow ? 'w-6 h-6 md:w-8 md:h-8 mb-1' : 'w-10 h-10 md:w-12 md:h-12 mb-2';
+                const textClass = isNarrow ? 'text-[10px]' : textSize;
+
+                div.innerHTML = `
+                    <img src="${seg.image}" alt="${seg.name}" class="${imgSizeClass} rounded-full border-2 border-white shadow-md object-cover bg-white">
+                    <span class="text-white font-bold ${textClass} drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap" style="writing-mode: vertical-rl;">
+                        ${seg.name}
+                    </span>
+                `;
+                wheel.appendChild(div);
+            });
+            
+            // spin()で使用できるようにsegmentsを保存
+            wheel.dataset.segments = JSON.stringify(segments);
+        };
+
+        const renderStatus = () => {
+            if (remaining.length === 0 && order.length > 0) {
+                elements.statusMessageContainer.innerHTML = `
+                    <div class="bg-green-50 text-green-700 px-6 py-4 rounded-xl border border-green-200 animate-pulse mb-4">
+                        <p class="text-xl font-bold flex items-center justify-center gap-2">
+                            <i class="fas fa-users"></i> 全員の発表順が決定しました！
+                        </p>
+                    </div>
+                    <button onclick="document.getElementById('expandListBtn').click()" class="flex items-center justify-center gap-2 w-full px-5 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-md">
+                        <i class="fas fa-list-ol"></i> 最終結果を大きく表示する
+                    </button>
+                `;
+            } else {
+                elements.statusMessageContainer.innerHTML = `
+                    <p class="text-gray-500 font-medium">残り ${remaining.length} 人 / 全 ${allParticipants.length} 人</p>
+                `;
+            }
+        };
+
+        const renderOrderList = () => {
+            elements.orderCountBadge.textContent = `${order.length} 人決定`;
+            
+            if (order.length === 0) {
+                elements.orderList.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 py-10">
+                        <i class="fas fa-trophy text-4xl mb-3 opacity-20"></i>
+                        <p>まだ誰も選ばれていません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            elements.orderList.innerHTML = order.map((item, index) => `
+                <li class="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-white rounded-xl border border-blue-100 shadow-sm animate-in-slide">
+                    <div class="flex items-center gap-3 min-w-[50%]">
+                        <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-inner shrink-0">
+                            ${index + 1}
+                        </div>
+                        <img src="${item.winner.image}" alt="${item.winner.name}" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover bg-white">
+                        <span class="font-bold text-gray-800">${item.winner.name}</span>
+                    </div>
+                    ${item.feedbacker ? `
+                    <div class="flex items-center gap-2 text-xs text-gray-600 bg-yellow-50 px-3 py-1.5 rounded-lg border border-yellow-100 ml-11 sm:ml-0 w-max">
+                        <i class="fas fa-comment-dots text-yellow-500"></i> FB:
+                        <img src="${item.feedbacker.image}" alt="${item.feedbacker.name}" class="w-6 h-6 rounded-full object-cover bg-white border border-yellow-200">
+                        <span class="font-bold">${item.feedbacker.name}</span>
+                    </div>
+                    ` : ''}
+                </li>
+            `).join('');
+        };
+
+        const renderExpandedOrderList = () => {
+            elements.expandedOrderCountBadge.textContent = `${order.length} 人決定`;
+            
+            if (order.length === 0) {
+                elements.expandedOrderList.innerHTML = `
+                    <div class="col-span-full h-64 flex flex-col items-center justify-center text-gray-400">
+                        <i class="fas fa-trophy text-6xl mb-4 opacity-20"></i>
+                        <p class="text-xl font-bold">まだ誰も選ばれていません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            elements.expandedOrderList.innerHTML = order.map((item, index) => `
+                <div class="flex flex-col gap-3 p-5 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full z-0 opacity-50"></div>
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xl shadow-inner shrink-0">
+                            ${index + 1}
+                        </div>
+                        <img src="${item.winner.image}" alt="${item.winner.name}" class="w-14 h-14 rounded-full border-2 border-gray-100 shadow-sm object-cover bg-white shrink-0">
+                        <span class="font-black text-gray-800 text-xl truncate">${item.winner.name}</span>
+                    </div>
+                    ${item.feedbacker ? `
+                    <div class="mt-2 flex items-center justify-between text-sm text-gray-700 bg-yellow-50 px-4 py-2.5 rounded-xl border border-yellow-100 relative z-10">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-comment-dots text-yellow-500 text-lg"></i>
+                            <span class="font-bold text-gray-500">FB:</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-base">${item.feedbacker.name}</span>
+                            <img src="${item.feedbacker.image}" alt="${item.feedbacker.name}" class="w-8 h-8 rounded-full object-cover bg-white border border-yellow-200">
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        };
+
+        const renderParticipantList = () => {
+            elements.participantList.innerHTML = allParticipants.map(p => `
+                <li class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg group border border-transparent hover:border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <img src="${p.image}" alt="${p.name}" class="w-8 h-8 rounded-full object-cover border bg-white">
+                            <div class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white" style="background-color: ${p.color};" title="ルーレット上の色"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-700">${p.name}</span>
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <button onclick="requestEdit('${p.id}')" ${isSpinning ? 'disabled' : ''} class="text-gray-300 hover:text-blue-500 p-1.5 transition disabled:opacity-0" title="編集">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button onclick="requestRemove('${p.id}')" ${isSpinning ? 'disabled' : ''} class="text-gray-300 hover:text-red-500 p-1.5 transition disabled:opacity-0" title="削除">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </li>
+            `).join('');
+        };
+
+        const updateFormState = () => {
+            // 利用可能な色を計算
+            const usedColors = allParticipants.map(p => p.color);
+            const availableColors = ROULETTE_COLORS.filter(c => !usedColors.includes(c.code));
+            
+            if (availableColors.length > 0 && (!selectedColor || !availableColors.some(c => c.code === selectedColor))) {
+                selectedColor = availableColors[0].code;
+            }
+
+            // カラーピッカーの描画
+            if (availableColors.length === 0) {
+                elements.colorPickerContainer.innerHTML = '<span class="text-xs text-red-500 font-medium">利用可能な色がありません</span>';
+            } else {
+                elements.colorPickerContainer.innerHTML = availableColors.map(c => `
+                    <button type="button" onclick="selectColor('${c.code}')" class="w-6 h-6 rounded-full cursor-pointer transition-all shadow-sm ${selectedColor === c.code ? 'scale-125 ring-2 ring-offset-2 ring-blue-500' : 'hover:scale-110'}" style="background-color: ${c.code}" title="${c.name}"></button>
+                `).join('');
+            }
+
+            // 現在選択されている値を保持する
+            const currentPresetValue = elements.presetSelect.value;
+
+            // デフォルトメンバー選択リストの更新
+            const availablePresets = PREDEFINED_MEMBERS.filter(pm => !allParticipants.some(ap => ap.id === pm.id));
+            elements.presetSelect.innerHTML = '<option value="">追加するメンバーを選択...</option>';
+            
+            if (availablePresets.length === 0) {
+                elements.presetSelect.innerHTML += '<option value="" disabled>デフォルトメンバーは全員追加済みです</option>';
+            } else {
+                availablePresets.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    elements.presetSelect.appendChild(option);
+                });
+            }
+
+            // セレクトボックスの選択状態を復元する
+            if (currentPresetValue && availablePresets.some(p => p.id === currentPresetValue)) {
+                elements.presetSelect.value = currentPresetValue;
+            }
+
+            // 追加ボタンの有効/無効
+            if (addMode === 'preset') {
+                elements.addSubmitBtn.disabled = !elements.presetSelect.value;
+            } else {
+                elements.addSubmitBtn.disabled = !elements.customNameInput.value.trim();
+            }
+        };
+
+        // --- アクションハンドラ ---
+        const spin = () => {
+            if (isSpinning || remaining.length === 0) return;
+            isSpinning = true;
+            updateUI();
+
+            if (isSoundEnabled) {
+                initAudio();
+                startSpinAnimationSound();
+            }
+
+            const totalWeight = remaining.reduce((sum, p) => sum + (p.weight || 1), 0);
+            let randomVal = Math.random() * totalWeight;
+            let winnerIndex = 0;
+            
+            for (let i = 0; i < remaining.length; i++) {
+                const weight = remaining[i].weight || 1;
+                if (randomVal <= weight) {
+                    winnerIndex = i;
+                    break;
+                }
+                randomVal -= weight;
+            }
+
+            const segments = JSON.parse(elements.rouletteWheel.dataset.segments);
+            const winnerSegment = segments[winnerIndex];
+            
+            const currentBase = Math.floor(currentRotation / 360) * 360;
+            const offset = (Math.random() - 0.5) * winnerSegment.angle * 0.8;
+            currentRotation = currentBase + (360 * 5) + (360 - winnerSegment.center) + offset;
+
+            elements.rouletteWheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                showWinner(remaining[winnerIndex]);
+                if (isSoundEnabled) playFanfare();
+            }, 5000);
+        };
+
+        const showWinner = (winner) => {
+            currentWinner = winner;
+            elements.winnerImage.src = winner.image;
+            elements.winnerName.textContent = winner.name;
+            elements.winnerModal.classList.remove('hidden');
+            
+            // 紙吹雪を生成
+            elements.confettiContainer.innerHTML = Array.from({ length: 80 }).map(() => {
+                const left = Math.random() * 100;
+                const animationDuration = 2 + Math.random() * 3;
+                const animationDelay = Math.random() * 1.5;
+                const color = ROULETTE_COLORS[Math.floor(Math.random() * ROULETTE_COLORS.length)].code;
+                return `<div class="absolute top-[-20px] w-3 h-3 rounded-sm opacity-80" style="left: ${left}%; background-color: ${color}; animation: fall ${animationDuration}s linear ${animationDelay}s infinite; transform: rotate(${Math.random() * 360}deg)"></div>`;
+            }).join('');
+
+            // FB機能がOFFの場合はここで抽選アニメーションをスキップ
+            if (!isFbEnabled) {
+                elements.fbDisplayArea.classList.add('hidden');
+                currentFeedbacker = null;
+                elements.confirmWinnerBtn.disabled = false;
+                elements.redoBtn.disabled = false;
+                return;
+            }
+
+            elements.fbDisplayArea.classList.remove('hidden');
+
+            // FB担当の抽選アニメーション (重複なし対応)
+            // 既にFBを担当した人のIDリストを取得
+            const usedFbIds = order.map(item => item.feedbacker.id);
+            
+            // まだFBを担当していない、かつ今回の発表者ではない人を候補にする
+            let availableFB = allParticipants.filter(p => p.id !== winner.id && !usedFbIds.includes(p.id));
+            
+            // 候補がいない場合（最後の1人で自分自身しか残っていない、または2巡目に入った場合）の救済措置
+            if (availableFB.length === 0) {
+                availableFB = allParticipants.filter(p => p.id !== winner.id);
+            }
+
+            if (availableFB.length === 0) {
+                currentFeedbacker = winner;
+                elements.feedbackerImage.src = winner.image;
+                elements.feedbackerName.textContent = "なし";
+                return;
+            }
+
+            // 抽選中はボタンを押せないようにする
+            elements.confirmWinnerBtn.disabled = true;
+            elements.redoBtn.disabled = true;
+            
+            let count = 0;
+            const maxCount = 40; // 約2秒間パラパラ切り替える（元の2倍）
+            
+            if(fbInterval) clearInterval(fbInterval);
+            fbInterval = setInterval(() => {
+                const randomP = availableFB[Math.floor(Math.random() * availableFB.length)];
+                elements.feedbackerImage.src = randomP.image;
+                elements.feedbackerName.textContent = randomP.name;
+                count++;
+                
+                if (count >= maxCount) {
+                    clearInterval(fbInterval);
+                    currentFeedbacker = availableFB[Math.floor(Math.random() * availableFB.length)];
+                    elements.feedbackerImage.src = currentFeedbacker.image;
+                    elements.feedbackerName.textContent = currentFeedbacker.name;
+                    
+                    // 決定したらボタンを有効化
+                    elements.confirmWinnerBtn.disabled = false;
+                    elements.redoBtn.disabled = false;
+                }
+            }, 50);
+        };
+
+        const confirmWinner = () => {
+            order.push({
+                winner: currentWinner,
+                feedbacker: currentFeedbacker
+            });
+            remaining = remaining.filter(p => p.id !== currentWinner.id);
+            isSpinning = false;
+            currentWinner = null;
+            currentFeedbacker = null;
+            elements.winnerModal.classList.add('hidden');
+            elements.confettiContainer.innerHTML = '';
+            updateUI();
+        };
+
+        const redoSpin = () => {
+            isSpinning = false;
+            currentWinner = null;
+            currentFeedbacker = null;
+            if(fbInterval) clearInterval(fbInterval);
+            elements.winnerModal.classList.add('hidden');
+            elements.confettiContainer.innerHTML = '';
+            updateUI();
+        };
+
+        const resetAll = () => {
+            remaining = [...allParticipants];
+            order = [];
+            currentRotation = 0;
+            elements.rouletteWheel.style.transitionDuration = '0s';
+            elements.rouletteWheel.style.transform = `rotate(0deg)`;
+            setTimeout(() => {
+                elements.rouletteWheel.style.transitionDuration = '5s';
+            }, 50);
+            elements.resetConfirmModal.classList.add('hidden');
+            updateUI();
+        };
+
+        const shuffleRemaining = () => {
+            if (isSpinning || remaining.length <= 1) return;
+            
+            // Fisher-Yates アルゴリズムで配置をシャッフル
+            for (let i = remaining.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+            }
+            
+            // CSSアニメーションをリセットして再実行
+            elements.rouletteFlipContainer.classList.remove('animate-flip');
+            void elements.rouletteFlipContainer.offsetWidth; // リフローを強制
+            elements.rouletteFlipContainer.classList.add('animate-flip');
+
+            // 盤面が90度裏返って見えなくなった瞬間(300ms後)にUIを更新して配置を入れ替える
+            setTimeout(() => {
+                updateUI();
+            }, 300);
+
+            // アニメーション終了後にクラスを外す
+            setTimeout(() => {
+                elements.rouletteFlipContainer.classList.remove('animate-flip');
+            }, 600);
+        };
+
+        const addParticipant = (e) => {
+            e.preventDefault();
+            let newPerson;
+
+            if (addMode === 'preset') {
+                const presetId = elements.presetSelect.value;
+                const preset = PREDEFINED_MEMBERS.find(m => m.id === presetId);
+                if (!preset) return;
+                
+                newPerson = {
+                    id: preset.id,
+                    name: preset.name,
+                    image: preset.image,
+                    weight: preset.weight !== undefined ? preset.weight : (elements.narrowCheckbox.checked ? 0.15 : 1),
+                    color: selectedColor || '#999'
+                };
+            } else {
+                const name = elements.customNameInput.value.trim();
+                if (!name) return;
+                
+                newPerson = {
+                    id: Date.now().toString(),
+                    name: name,
+                    image: elements.customUrlInput.value.trim() || getAvatar(name),
+                    weight: elements.narrowCheckbox.checked ? 0.15 : 1,
+                    color: selectedColor || '#999'
+                };
+            }
+
+            allParticipants.push(newPerson);
+            
+            if (order.length === 0) {
+                remaining.push(newPerson);
+            } else {
+                alert("すでにルーレットが進行中のため、追加されたメンバーは次回の開始時に反映されます。");
+            }
+
+            // フォームリセット
+            elements.presetSelect.value = '';
+            elements.customNameInput.value = '';
+            elements.customUrlInput.value = '';
+            elements.narrowCheckbox.checked = false;
+            updateUI();
+        };
+
+        window.requestRemove = (id) => {
+            if (isSpinning) return;
+            if (order.length > 0) {
+                participantToRemoveId = id;
+                elements.removeConfirmModal.classList.remove('hidden');
+            } else {
+                executeRemove(id);
+            }
+        };
+
+        const executeRemove = (id) => {
+            const targetId = id || participantToRemoveId;
+            allParticipants = allParticipants.filter(p => p.id !== targetId);
+            remaining = remaining.filter(p => p.id !== targetId);
+            order = order.filter(p => p.id !== targetId);
+            
+            // ルーレットの盤面に反映させるため即時更新
+            participantToRemoveId = null;
+            elements.removeConfirmModal.classList.add('hidden');
+            updateUI();
+        };
+
+        // --- メンバー編集機能 ---
+        const renderEditColorPicker = () => {
+            const usedColors = allParticipants.map(p => p.color);
+            const availableColors = ROULETTE_COLORS.filter(c => !usedColors.includes(c.code) || c.code === editSelectedColor);
+            
+            elements.editColorPickerContainer.innerHTML = availableColors.map(c => `
+                <button type="button" onclick="selectEditColor('${c.code}')" class="w-6 h-6 rounded-full cursor-pointer transition-all shadow-sm ${editSelectedColor === c.code ? 'scale-125 ring-2 ring-offset-2 ring-blue-500' : 'hover:scale-110'}" style="background-color: ${c.code}" title="${c.name}"></button>
+            `).join('');
+        };
+
+        window.requestEdit = (id) => {
+            if (isSpinning) return;
+            const target = allParticipants.find(p => p.id === id);
+            if (!target) return;
+
+            participantToEditId = id;
+            elements.editNameInput.value = target.name;
+            // Avatarの自動生成URLならURL欄は空にする配慮（プレフィックスで判定）
+            const isAvatar = target.image.includes('api.dicebear.com');
+            elements.editUrlInput.value = isAvatar ? '' : target.image;
+            elements.editNarrowCheckbox.checked = (target.weight && target.weight < 1);
+            editSelectedColor = target.color;
+            
+            renderEditColorPicker();
+            elements.editParticipantModal.classList.remove('hidden');
+        };
+
+        const executeEdit = (e) => {
+            e.preventDefault();
+            if (!participantToEditId) return;
+
+            const name = elements.editNameInput.value.trim();
+            if (!name) return;
+
+            const newData = {
+                name: name,
+                image: elements.editUrlInput.value.trim() || getAvatar(name),
+                weight: elements.editNarrowCheckbox.checked ? 0.15 : 1,
+                color: editSelectedColor
+            };
+
+            // 全てのリスト内データを更新
+            const apIdx = allParticipants.findIndex(p => p.id === participantToEditId);
+            if (apIdx !== -1) allParticipants[apIdx] = { ...allParticipants[apIdx], ...newData };
+
+            const rmIdx = remaining.findIndex(p => p.id === participantToEditId);
+            if (rmIdx !== -1) remaining[rmIdx] = { ...remaining[rmIdx], ...newData };
+
+            order.forEach(item => {
+                if (item.winner && item.winner.id === participantToEditId) {
+                    item.winner = { ...item.winner, ...newData };
+                }
+                if (item.feedbacker && item.feedbacker.id === participantToEditId) {
+                    item.feedbacker = { ...item.feedbacker, ...newData };
+                }
+            });
+
+            closeEditModal();
+            updateUI();
+        };
+
+        const closeEditModal = () => {
+            participantToEditId = null;
+            elements.editParticipantModal.classList.add('hidden');
+        };
+
+        window.selectEditColor = (code) => {
+            editSelectedColor = code;
+            renderEditColorPicker();
+        };
+
+        window.selectColor = (code) => {
+            selectedColor = code;
+            updateUI();
+        };
+
+        const openExpandedList = () => {
+            renderExpandedOrderList();
+            elements.expandedListModal.classList.remove('hidden');
+        };
+
+        const closeExpandedList = () => {
+            elements.expandedListModal.classList.add('hidden');
+        };
+
+        // --- イベントリスナー設定 ---
+        // タイトルの編集制御（Enterで確定し、ブラウザのタブ名も同期する）
+        elements.appTitle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                elements.appTitle.blur();
+            }
+        });
+        
+        elements.appTitle.addEventListener('input', () => {
+            const newTitle = elements.appTitle.textContent.trim() || '無題のルーレット';
+            document.title = `${newTitle} - 発表順ルーレット`;
+        });
+
+        elements.toggleSoundBtn.addEventListener('click', () => {
+            isSoundEnabled = !isSoundEnabled;
+            elements.toggleSoundBtn.className = `flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-sm font-semibold transition border ${isSoundEnabled ? 'bg-white/20 border-white/30 hover:bg-white/30' : 'bg-black/20 border-transparent text-white/70 hover:bg-black/30'}`;
+            elements.soundIcon.className = isSoundEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+            elements.soundText.textContent = isSoundEnabled ? 'サウンド ON' : 'サウンド OFF';
+        });
+
+        elements.toggleFbBtn.addEventListener('click', () => {
+            isFbEnabled = !isFbEnabled;
+            elements.toggleFbBtn.className = `flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-sm font-semibold transition border ${isFbEnabled ? 'bg-white/20 border-white/30 hover:bg-white/30' : 'bg-black/20 border-transparent text-white/70 hover:bg-black/30'}`;
+            elements.fbIcon.className = isFbEnabled ? 'fas fa-comment-dots' : 'fas fa-comment-slash';
+            elements.fbText.textContent = isFbEnabled ? 'FB抽選 ON' : 'FB抽選 OFF';
+        });
+
+        elements.spinBtn.addEventListener('click', spin);
+        elements.shuffleBtn.addEventListener('click', shuffleRemaining);
+        elements.confirmWinnerBtn.addEventListener('click', confirmWinner);
+        elements.redoBtn.addEventListener('click', redoSpin);
+        
+        elements.resetRouletteBtn.addEventListener('click', () => elements.resetConfirmModal.classList.remove('hidden'));
+        elements.clearAllBtn.addEventListener('click', () => elements.resetConfirmModal.classList.remove('hidden'));
+        elements.cancelResetBtn.addEventListener('click', () => elements.resetConfirmModal.classList.add('hidden'));
+        elements.executeResetBtn.addEventListener('click', resetAll);
+
+        elements.cancelRemoveBtn.addEventListener('click', () => {
+            participantToRemoveId = null;
+            elements.removeConfirmModal.classList.add('hidden');
+        });
+        elements.executeRemoveBtn.addEventListener('click', () => executeRemove());
+
+        elements.editParticipantForm.addEventListener('submit', executeEdit);
+        elements.cancelEditBtn.addEventListener('click', closeEditModal);
+
+        elements.expandListBtn.addEventListener('click', openExpandedList);
+        elements.closeExpandedListBtn.addEventListener('click', closeExpandedList);
+        elements.expandedListModal.addEventListener('click', (e) => {
+            if (e.target === elements.expandedListModal) {
+                closeExpandedList();
+            }
+        });
+
+        elements.tabPresetBtn.addEventListener('click', () => {
+            addMode = 'preset';
+            elements.tabPresetBtn.className = 'flex-1 py-1.5 text-sm font-bold rounded-md transition-all bg-white text-blue-600 shadow-sm';
+            elements.tabCustomBtn.className = 'flex-1 py-1.5 text-sm font-bold rounded-md transition-all text-gray-500 hover:text-gray-700';
+            elements.presetInputGroup.classList.remove('hidden');
+            elements.customInputGroup.classList.add('hidden');
+            elements.customInputGroup.classList.remove('flex');
+            updateUI();
+        });
+
+        elements.tabCustomBtn.addEventListener('click', () => {
+            addMode = 'custom';
+            elements.tabCustomBtn.className = 'flex-1 py-1.5 text-sm font-bold rounded-md transition-all bg-white text-blue-600 shadow-sm';
+            elements.tabPresetBtn.className = 'flex-1 py-1.5 text-sm font-bold rounded-md transition-all text-gray-500 hover:text-gray-700';
+            elements.presetInputGroup.classList.add('hidden');
+            elements.customInputGroup.classList.remove('hidden');
+            elements.customInputGroup.classList.add('flex');
+            updateUI();
+        });
+
+        elements.presetSelect.addEventListener('change', updateUI);
+        elements.customNameInput.addEventListener('input', updateUI);
+        elements.addParticipantForm.addEventListener('submit', addParticipant);
+
+        // --- 初期化 ---
+        const initializeApp = () => {
+            // 初期データのセットアップ
+            allParticipants = PREDEFINED_MEMBERS.map((m, i) => ({
+                ...m,
+                weight: m.weight !== undefined ? m.weight : 1,
+                color: ROULETTE_COLORS[i % ROULETTE_COLORS.length].code
+            }));
+            remaining = [...allParticipants];
+            
+            updateUI();
+        };
+
+        // アプリケーション起動
+        initializeApp();
+
+    </script>
+</body>
+</html>
