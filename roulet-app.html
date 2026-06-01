@@ -554,12 +554,14 @@
                 div.style.height = '50%';
                 div.style.transform = `translateX(-50%) rotate(${seg.center}deg)`;
                 
-                const imgSizeClass = isNarrow ? 'w-6 h-6 md:w-8 md:h-8 mb-1' : 'w-10 h-10 md:w-12 md:h-12 mb-2';
+                // shrink-0 を追加して画像が潰れるのを防ぐ
+                const imgSizeClass = isNarrow ? 'w-6 h-6 md:w-8 md:h-8 mb-1 shrink-0' : 'w-10 h-10 md:w-12 md:h-12 mb-2 shrink-0';
                 const textClass = isNarrow ? 'text-[10px]' : textSize;
 
                 div.innerHTML = `
                     <img src="${seg.image}" alt="${seg.name}" class="${imgSizeClass} rounded-full border-2 border-white shadow-md object-cover bg-white">
-                    <span class="text-white font-bold ${textClass} drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap" style="writing-mode: vertical-rl;">
+                    <!-- flex-1, min-h-0, overflow-hidden, text-overflow: ellipsis; を追加して長い名前を省略/非表示にする -->
+                    <span class="text-white font-bold ${textClass} drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap flex-1 min-h-0 overflow-hidden" style="writing-mode: vertical-rl; text-overflow: ellipsis;">
                         ${seg.name}
                     </span>
                 `;
