@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WalkMe Builder Assistant</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel for JSX transpilation in the browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-[#F4F6F9] font-sans">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useMemo } = React;
+
+    // --- Inline Icons (Replaces lucide-react dependency) ---
+    const Icon = ({ name, size = 24, className = "" }) => {
+      const icons = {
+        Wand2: <><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></>,
+        Code2: <><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></>,
+        Type: <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></>,
+        Copy: <><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>,
+        Check: <><polyline points="20 6 9 17 4 12"/></>,
+        ChevronRight: <><polyline points="9 18 15 12 9 6"/></>,
+        TerminalSquare: <><polyline points="7 11 9 13 7 15"/><line x1="13" y1="15" x2="17" y2="15"/><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></>,
+        Paintbrush: <><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/></>,
+        CheckCircle2: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+        XCircle: <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>,
+        AlertTriangle: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+        Settings2: <><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></>
+      };
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+          {icons[name]}
+        </svg>
+      );
+    };
+
+    // --- Helper Functions ---
+    const fallbackCopyTextToClipboard = (text) => {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.position = "fixed";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('コピーに失敗しました:', err);
+      }
+      document.body.removeChild(textArea);
+    };
+
+    const escapeRegexChar = (string) => {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
+    // --- Reusable Components ---
+    const CopyButton = ({ text }) => {
+      const [copied, setCopied] = useState(false);
+      const handleCopy = () => {
+        if (!text) return;
+        fallbackCopyTextToClipboard(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      };
+      return (
+        <button
+          onClick={handleCopy}
+          className="text-gray-400 hover:text-[#0071EB] transition-colors p-2 rounded-md hover:bg-blue-50 focus:outline-none"
+          title="クリップボードにコピー"
+        >
+          {copied ? <Icon name="Check" size={18} className="text-green-500" /> : <Icon name="Copy" size={18} />}
+        </button>
+      );
+    };
+
+    // --- View: Regex Builder (GUI Based) ---
+    const RegexBuilderView = () => {
+      const [matchType, setMatchType] = useState('startsWith');
+      const [baseString, setBaseString] = useState('');
+      const [allowDynamic, setAllowDynamic] = useState(false);
+      const [dynamicType, setDynamicType] = useState('.*');
+      
+      const [testString, setTestString] = useState('');
+
+      const output = useMemo(() => {
+        if (!baseString) return '';
+        let pattern = escapeRegexChar(baseString);
+        
+        if (allowDynamic && matchType === 'startsWith') {
+          pattern += dynamicType;
+        }
+
+        if (matchType === 'startsWith') {
+          pattern = `^${pattern}`;
+        } else if (matchType === 'endsWith') {
+          pattern = `${pattern}$`;
+        } else if (matchType === 'exact') {
+          pattern = `^${pattern}$`;
+        } // contains はそのまま
+
+        return pattern;
+      }, [matchType, baseString, allowDynamic, dynamicType]);
+
+      const renderRegexTester = () => {
+        if (!output) return null;
+        let isValidRegex = true;
+        let isMatch = false;
+        let matchError = '';
+        const flags = 'g';
+
+        try {
+          const re = new RegExp(output, flags);
+          if (testString) {
+            re.lastIndex = 0;
+            isMatch = re.test(testString);
+          }
+        } catch (e) {
+          isValidRegex = false;
+          matchError = e.message;
+        }
+
+        const renderHighlightedText = () => {
+          if (!testString) return <span className="text-gray-400 italic">上にテスト文字列を入力してください...</span>;
+          if (!isValidRegex) return <span className="text-red-500">{testString}</span>;
+          if (!isMatch) return <span className="text-gray-500">{testString}</span>;
+
+          try {
+            const re = new RegExp(output, flags);
+            const parts = [];
+            let lastIndex = 0;
+            let match;
+            
+            while ((match = re.exec(testString)) !== null) {
+              if (match.index > lastIndex) {
+                parts.push({ text: testString.substring(lastIndex, match.index), highlight: false });
+              }
+              parts.push({ text: match[0], highlight: true });
+              lastIndex = match.index + match[0].length;
+              if (match[0].length === 0) re.lastIndex++;
+            }
+            if (lastIndex < testString.length) {
+              parts.push({ text: testString.substring(lastIndex), highlight: false });
+            }
+            
+            return parts.map((part, i) => 
+              part.highlight ? 
+                <span key={i} className="bg-blue-200 text-blue-900 rounded-sm font-semibold border-b-2 border-blue-400">{part.text}</span> : 
+                <span key={i} className="text-gray-700">{part.text}</span>
+            );
+          } catch (e) {
+            return <span>{testString}</span>;
+          }
+        };
+
+        return (
+          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <span className="text-sm font-bold text-gray-700 flex items-center">
+                ライブ正規表現テスター 
+                {isValidRegex && <span className="ml-3 font-mono text-xs bg-white border border-gray-300 text-gray-500 px-2 py-0.5 rounded tracking-wide">/{output}/{flags}</span>}
+              </span>
+              {testString && isValidRegex && (
+                isMatch ? 
+                  <span className="flex items-center text-sm text-green-600 font-medium"><Icon name="CheckCircle2" size={16} className="mr-1"/> 一致しました</span> : 
+                  <span className="flex items-center text-sm text-red-500 font-medium"><Icon name="XCircle" size={16} className="mr-1"/> 一致しません</span>
+              )}
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">テスト文字列</label>
+                <textarea
+                  value={testString}
+                  onChange={(e) => setTestString(e.target.value)}
+                  placeholder="例: https://app.example.com/settings/12345"
+                  className="w-full h-16 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono resize-none"
+                ></textarea>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">評価結果</label>
+                <div className={`w-full p-3 border rounded-md text-sm font-mono break-all min-h-[3rem] ${isValidRegex && isMatch ? 'bg-blue-50/50 border-blue-100' : 'bg-gray-50 border-gray-200'}`}>
+                   {renderHighlightedText()}
+                </div>
+                {!isValidRegex && <p className="text-xs text-red-500 mt-1">{matchError}</p>}
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">GUI 正規表現ビルダー</h2>
+            <p className="text-gray-500 mt-1">ルールを組み合わせてWalkMe向けの安全な正規表現を作成します。</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">マッチタイプ</label>
+                <select 
+                  value={matchType} 
+                  onChange={(e) => setMatchType(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm"
+                >
+                  <option value="startsWith">前方一致 (Starts with)</option>
+                  <option value="endsWith">後方一致 (Ends with)</option>
+                  <option value="exact">完全一致 (Exact match)</option>
+                  <option value="contains">部分一致 (Contains)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">基準となる文字列 (URLやパスなど)</label>
+                <input
+                  type="text"
+                  value={baseString}
+                  onChange={(e) => setBaseString(e.target.value)}
+                  placeholder="例: https://app.example.com/user/"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono"
+                />
+                <p className="text-xs text-gray-400 mt-1">※ 正規表現の特殊文字 ( ? や . など ) は自動的にエスケープされます。</p>
+              </div>
+
+              {matchType === 'startsWith' && (
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="allowDynamic"
+                      checked={allowDynamic}
+                      onChange={(e) => setAllowDynamic(e.target.checked)}
+                      className="rounded border-gray-300 text-[#0071EB] focus:ring-[#0071EB]"
+                    />
+                    <label htmlFor="allowDynamic" className="text-sm font-medium text-gray-700">
+                      末尾に動的な値（IDなど）を許容する
+                    </label>
+                  </div>
+                  
+                  {allowDynamic && (
+                    <div className="mt-3 ml-6">
+                      <select 
+                        value={dynamicType} 
+                        onChange={(e) => setDynamicType(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm"
+                      >
+                        <option value=".*">任意の文字列 (.*)</option>
+                        <option value="\d+">数字のみ (\d+)</option>
+                        <option value="[a-zA-Z0-9]+">英数字 ([a-zA-Z0-9]+)</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-[#0B1E40] rounded-lg shadow-sm border border-[#0B1E40] overflow-hidden flex flex-col">
+              <div className="bg-[#07132a] px-4 py-3 border-b border-[#142e5c] flex justify-between items-center">
+                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center">
+                  <Icon name="Code2" size={14} className="mr-2" /> 生成された正規表現
+                </span>
+                <CopyButton text={output} />
+              </div>
+              <div className="p-6 flex-1 flex items-center justify-center bg-gradient-to-br from-[#0B1E40] to-[#112a57]">
+                {output ? (
+                  <pre className="text-xl font-mono text-[#4da6ff] break-all whitespace-pre-wrap text-center max-w-full overflow-x-auto">{output}</pre>
+                ) : (
+                  <span className="text-gray-500 text-sm">文字列を入力するとここに表示されます</span>
+                )}
+              </div>
+            </div>
+          </div>
+          {renderRegexTester()}
+        </div>
+      );
+    };
+
+    // --- View: jQuery Builder (GUI Based) ---
+    const JQueryBuilderView = () => {
+      const [tag, setTag] = useState('');
+      const [id, setId] = useState('');
+      const [className, setClassName] = useState('');
+      const [containsText, setContainsText] = useState('');
+      const [customAttr, setCustomAttr] = useState('');
+
+      const output = useMemo(() => {
+        let selector = tag || '';
+        if (id) selector += `#${id.trim().replace(/^#/, '')}`;
+        if (className) {
+          const classes = className.split(' ').map(c => c.trim()).filter(Boolean);
+          selector += classes.map(c => `.${c.replace(/^\./, '')}`).join('');
+        }
+        if (customAttr) {
+          const attr = customAttr.trim();
+          selector += attr.startsWith('[') ? attr : `[${attr}]`;
+        }
+        if (containsText) {
+          selector += `:contains("${containsText.trim()}")`;
+        }
+        
+        if (!selector) return '';
+        return `$('${selector}')`;
+      }, [tag, id, className, containsText, customAttr]);
+
+      return (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">GUI jQuery ビルダー</h2>
+            <p className="text-gray-500 mt-1">要素の特定条件を入力して、WalkMe互換のjQueryを生成します。</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">HTMLタグ</label>
+                  <input type="text" value={tag} onChange={e => setTag(e.target.value)} placeholder="div, button, span..." className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ID (シャープ不要)</label>
+                  <input type="text" value={id} onChange={e => setId(e.target.value)} placeholder="submit-btn" className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">クラス (ピリオド不要、スペース区切り)</label>
+                <input type="text" value={className} onChange={e => setClassName(e.target.value)} placeholder="btn btn-primary" className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">表示テキストを含む (:contains)</label>
+                <input type="text" value={containsText} onChange={e => setContainsText(e.target.value)} placeholder="保存する" className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">カスタム属性</label>
+                <input type="text" value={customAttr} onChange={e => setCustomAttr(e.target.value)} placeholder='data-walkme="true"' className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono" />
+              </div>
+            </div>
+
+            <div className="bg-[#0B1E40] rounded-lg shadow-sm border border-[#0B1E40] overflow-hidden flex flex-col">
+              <div className="bg-[#07132a] px-4 py-3 border-b border-[#142e5c] flex justify-between items-center">
+                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center">
+                  <Icon name="TerminalSquare" size={14} className="mr-2" /> jQueryコード
+                </span>
+                <CopyButton text={output} />
+              </div>
+              <div className="p-6 flex-1 flex items-center justify-center bg-gradient-to-br from-[#0B1E40] to-[#112a57]">
+                {output ? (
+                  <pre className="text-lg font-mono text-[#4da6ff] break-all whitespace-pre-wrap text-center max-w-full overflow-x-auto">{output}</pre>
+                ) : (
+                  <span className="text-gray-500 text-sm">条件を入力するとここに表示されます</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- View: CSS Optimizer (Rule Based) ---
+    const CSSOptimizerView = () => {
+      const [input, setInput] = useState('');
+      const [warnings, setWarnings] = useState([]);
+
+      const output = useMemo(() => {
+        setWarnings([]);
+        if (!input.trim()) return '';
+        
+        let w = [];
+        let selector = input.trim();
+        const parts = selector.split(/\s*(>|\s)\s*/).filter(p => p.trim() !== '' && p !== '>' && p !== ' ');
+        
+        let startIndex = 0;
+        for (let i = parts.length - 1; i >= 0; i--) {
+          if (parts[i].includes('#')) {
+            startIndex = i;
+            w.push('IDが見つかったため、それ以前の親要素パスを省略しました。');
+            break;
+          }
+        }
+
+        let optimizedParts = parts.slice(startIndex).map(part => {
+          if (part.includes('#')) {
+            const idMatch = part.match(/#[a-zA-Z0-9_-]+/);
+            return idMatch ? idMatch[0] : part;
+          }
+
+          if (part.includes(':nth-')) {
+            w.push(`脆いセレクタ (${part.match(/:nth-[a-zA-Z-]+\([^)]+\)/)?.[0]}) を検知しました。削除してクラスベースに最適化しました。`);
+            part = part.replace(/:nth-[a-zA-Z-]+\([^)]+\)/g, '');
+          }
+
+          if ((part.includes('.') || part.includes('[')) && !part.startsWith('.') && !part.startsWith('[')) {
+            part = part.replace(/^[a-zA-Z0-9_-]+/, '');
+          }
+
+          return part;
+        }).filter(p => p !== '');
+
+        setWarnings([...new Set(w)]);
+        return optimizedParts.join(' > ');
+      }, [input]);
+
+      return (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">CSS オプティマイザ</h2>
+            <p className="text-gray-500 mt-1">DevToolsの長いセレクタを解析し、WalkMe向けに自動クリーンアップします。</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ブラウザ(DevTools)からコピーしたセレクタ:
+              </label>
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="body > div.main-container > div#app > section.layout > div:nth-child(2) > button.submit-btn"
+                className="w-full h-24 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono resize-none"
+              ></textarea>
+            </div>
+          </div>
+
+          {output && (
+            <div className="bg-white rounded-lg shadow-sm border border-[#0071EB] overflow-hidden">
+              <div className="bg-blue-50 px-4 py-2 border-b border-blue-100 flex justify-between items-center">
+                <span className="text-xs font-bold text-[#0071EB] uppercase tracking-wider flex items-center">
+                  <Icon name="Settings2" size={16} className="mr-2" /> 最適化結果
+                </span>
+                <CopyButton text={output} />
+              </div>
+              <div className="p-6">
+                <pre className="text-lg font-mono text-gray-800 break-all whitespace-pre-wrap">{output}</pre>
+                
+                {warnings.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-amber-600 flex items-center mb-2">
+                      <Icon name="AlertTriangle" size={14} className="mr-1" /> 最適化ログ
+                    </p>
+                    <ul className="list-disc pl-5 text-xs text-gray-600 space-y-1">
+                      {warnings.map((w, i) => <li key={i}>{w}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // --- View: BBCode Helper ---
+    const TAG_DEFS = {
+      wt: { category: 'WalkMe アクション', label: 'Walk-Thru', hasValue: true, valueLabel: 'ID (例: 67485)', hasContent: true, contentPlaceholder: 'ここをクリック' },
+      swt: { category: 'WalkMe アクション', label: 'Smart Walk-Thru', hasValue: true, valueLabel: 'ID', hasContent: true, contentPlaceholder: 'ここをクリック' },
+      resource: { category: 'WalkMe アクション', label: 'Resource', hasValue: true, valueLabel: 'ID', hasContent: true, contentPlaceholder: 'ここをクリック' },
+      survey: { category: 'WalkMe アクション', label: 'Survey', hasValue: true, valueLabel: 'ID', hasContent: true, contentPlaceholder: 'ここをクリック' },
+      trg: { category: 'WalkMe アクション', label: 'Trigger', hasValue: true, valueLabel: 'トリガー番号', hasContent: true, contentPlaceholder: 'ここをクリック' },
+      'wm-data': { category: '動的テキスト', label: 'WM データ', hasContent: true, contentPlaceholder: 'key123' },
+      var: { category: '動的テキスト', label: '変数', hasContent: true, contentPlaceholder: 'variable123' },
+      jquery: { category: '動的テキスト', label: 'jQuery 要素', hasContent: true, contentPlaceholder: '#fullName' },
+      cookie: { category: '動的テキスト', label: 'Cookie', hasContent: true, contentPlaceholder: 'cookie123' },
+      regex: { category: 'ロジック', label: '正規表現 (Regex)', hasValue: true, valueLabel: '正規表現パターン', valueQuotes: true, hasContent: true, contentPlaceholder: '[jquery]#fullName[/jquery]' },
+      b: { category: '書式設定', label: '太字 (b)', hasContent: true },
+      i: { category: '書式設定', label: '斜体 (i)', hasContent: true },
+      u: { category: '書式設定', label: '下線 (u)', hasContent: true },
+      s: { category: '書式設定', label: '取り消し線 (s)', hasContent: true },
+      size: { category: '書式設定', label: 'フォントサイズ', hasValue: true, valueLabel: 'サイズ (例: 19)', hasContent: true },
+      color: { category: '書式設定', label: 'フォントの色', hasValue: true, valueLabel: '色 (例: red)', hasContent: true },
+      h2: { category: '書式設定', label: '見出し 2 (h2)', hasContent: true },
+      h3: { category: '書式設定', label: '見出し 3 (h3)', hasContent: true },
+      h4: { category: '書式設定', label: '見出し 4 (h4)', hasContent: true },
+      h5: { category: '書式設定', label: '見出し 5 (h5)', hasContent: true },
+      h6: { category: '書式設定', label: '見出し 6 (h6)', hasContent: true },
+      span: { category: '構造', label: 'Span', hasHtmlAttrs: true, hasContent: true },
+      div: { category: '構造', label: 'Div', hasHtmlAttrs: true, hasContent: true },
+      table: { category: '構造', label: 'テーブル (table)', hasContent: true, contentPlaceholder: '[tr]\n  [th]ヘッダー[/th]\n[/tr]\n[tr]\n  [td]データ[/td]\n[/tr]' },
+      tr: { category: '構造', label: 'テーブルの行 (tr)', hasContent: true, contentPlaceholder: '[td]内容[/td]' },
+      th: { category: '構造', label: 'テーブルのヘッダー (th)', hasContent: true, contentPlaceholder: '見出し' },
+      td: { category: '構造', label: 'テーブルのセル (td)', hasContent: true, contentPlaceholder: '内容' },
+      ul: { category: '構造', label: '箇条書きリスト (ul)', hasContent: true, contentPlaceholder: '[li]アイテム1[/li]\n[li]アイテム2[/li]' },
+      li: { category: '構造', label: 'リスト項目 (li)', hasContent: true, contentPlaceholder: '項目の内容' },
+      url: { category: 'リンクとメディア', label: 'リンク (URL / Mailto)', hasValue: true, valueLabel: 'URL (http://...)', hasTargetBlank: true, hasContent: true, contentPlaceholder: 'リンクテキスト' },
+      img: { category: 'リンクとメディア', label: '画像', hasValue: true, valueLabel: 'サイズ (例: 24x35)', hasContent: true, contentPlaceholder: 'www.img_url.com/img.png' },
+      iframe: { category: 'リンクとメディア', label: 'iFrame', hasContent: true, contentPlaceholder: 'https://...' },
+      video: { category: 'リンクとメディア', label: '動画 (MP4)', hasContent: true, contentPlaceholder: 'https://.../video.mp4' },
+      html5video: { category: 'リンクとメディア', label: 'HTML5 動画', hasHtml5VideoAttrs: true, hasContent: true, contentPlaceholder: 'https://.../video.mp4' },
+    };
+
+    const BBCodeHelperView = () => {
+      const [tag, setTag] = useState('span');
+      const [mainValue, setMainValue] = useState('');
+      const [id, setId] = useState('');
+      const [className, setClassName] = useState('');
+      const [attributes, setAttributes] = useState('');
+      const [targetBlank, setTargetBlank] = useState(false);
+      const [vidWidth, setVidWidth] = useState('426');
+      const [vidHeight, setVidHeight] = useState('240');
+      const [vidAutoplay, setVidAutoplay] = useState(false);
+      const [content, setContent] = useState('ここにテキストを入力');
+      const [output, setOutput] = useState('');
+
+      const groupedTags = useMemo(() => Object.entries(TAG_DEFS).reduce((acc, [key, def]) => {
+        if (!acc[def.category]) acc[def.category] = [];
+        acc[def.category].push({ key, ...def });
+        return acc;
+      }, {}), []);
+
+      const generateBBCode = useCallback(() => {
+        let code = `[${tag}`;
+        const def = TAG_DEFS[tag];
+
+        if (def.hasValue && mainValue.trim()) {
+          code += def.valueQuotes ? `="${mainValue.trim()}"` : `=${mainValue.trim()}`;
+        }
+        if (def.hasTargetBlank && targetBlank) code += `, target="blank"`;
+        if (def.hasHtml5VideoAttrs) {
+          if (vidWidth.trim()) code += ` width="${vidWidth.trim()}"`;
+          if (vidHeight.trim()) code += ` height="${vidHeight.trim()}"`;
+          if (vidAutoplay) code += ` autoplay="true"`;
+        }
+        if (def.hasHtmlAttrs) {
+          if (id.trim()) code += ` id="${id.trim()}"`;
+          if (className.trim()) code += ` class="${className.trim()}"`;
+          if (attributes.trim()) code += ` ${attributes.trim()}`;
+        }
+        code += `]`;
+        if (def.hasContent) {
+          code += content;
+          code += `[/${tag}]`;
+        }
+        setOutput(code);
+      }, [tag, mainValue, targetBlank, vidWidth, vidHeight, vidAutoplay, id, className, attributes, content]);
+
+      useEffect(() => {
+        generateBBCode();
+      }, [generateBBCode]);
+
+      const handleTagChange = (e) => {
+        const newTag = e.target.value;
+        setTag(newTag);
+        setContent(TAG_DEFS[newTag].contentPlaceholder || 'ここにテキストを入力');
+        setMainValue(''); 
+      };
+
+      const activeDef = TAG_DEFS[tag];
+
+      return (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">BBCode ヘルパー</h2>
+            <p className="text-gray-500 mt-1">WalkMeでサポートされているBBCode要素をすばやく作成します。</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">プロパティ</h3>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">要素タイプ</label>
+                <select value={tag} onChange={handleTagChange} className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm">
+                  {Object.entries(groupedTags).map(([category, tags]) => (
+                    <optgroup key={category} label={category}>
+                      {tags.map(t => <option key={t.key} value={t.key}>{t.label} ({t.key})</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              {activeDef.hasValue && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{activeDef.valueLabel}</label>
+                  <input type="text" value={mainValue} onChange={(e) => setMainValue(e.target.value)} placeholder={activeDef.label === '正規表現 (Regex)' ? '^some regex$' : ''} className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono" />
+                </div>
+              )}
+
+              {activeDef.hasTargetBlank && (
+                <div className="flex items-center space-x-2 mt-2">
+                  <input type="checkbox" id="targetBlank" checked={targetBlank} onChange={(e) => setTargetBlank(e.target.checked)} className="rounded border-gray-300 text-[#0071EB] focus:ring-[#0071EB]" />
+                  <label htmlFor="targetBlank" className="text-sm text-gray-700">新しいタブで開く (target="blank")</label>
+                </div>
+              )}
+
+              {activeDef.hasHtml5VideoAttrs && (
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">幅</label>
+                    <input type="text" value={vidWidth} onChange={(e) => setVidWidth(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-sm font-mono" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">高さ</label>
+                    <input type="text" value={vidHeight} onChange={(e) => setVidHeight(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-sm font-mono" />
+                  </div>
+                  <div className="flex items-center justify-center pt-6">
+                    <input type="checkbox" id="vidAutoplay" checked={vidAutoplay} onChange={(e) => setVidAutoplay(e.target.checked)} className="mr-2 rounded border-gray-300 text-[#0071EB] focus:ring-[#0071EB]" />
+                    <label htmlFor="vidAutoplay" className="text-sm text-gray-700">自動再生</label>
+                  </div>
+                </div>
+              )}
+
+              {activeDef.hasHtmlAttrs && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ID</label>
+                      <input type="text" value={id} onChange={(e) => setId(e.target.value)} placeholder="wm-custom-id" className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">クラス (Class)</label>
+                      <input type="text" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="wm-bold-text" className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">カスタム属性</label>
+                    <input type="text" value={attributes} onChange={(e) => setAttributes(e.target.value)} placeholder='data-custom="true"' className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm font-mono" />
+                  </div>
+                </>
+              )}
+
+              {activeDef.hasContent && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">コンテンツテキスト</label>
+                  <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="テキストまたは内部BBCode" className="w-full h-24 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071EB] text-sm resize-none font-mono"></textarea>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-[#0B1E40] rounded-lg shadow-sm border border-[#0B1E40] overflow-hidden flex flex-col">
+              <div className="bg-[#07132a] px-4 py-3 border-b border-[#142e5c] flex justify-between items-center">
+                <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center">
+                  <Icon name="TerminalSquare" size={14} className="mr-2" /> コンパイル結果
+                </span>
+                <CopyButton text={output} />
+              </div>
+              <div className="p-6 flex-1 flex items-center justify-center bg-gradient-to-br from-[#0B1E40] to-[#112a57]">
+                <pre className="text-lg font-mono text-[#4da6ff] break-all whitespace-pre-wrap text-center max-w-full overflow-x-auto">{output}</pre>
+              </div>
+              <div className="bg-[#07132a] p-4 text-xs text-gray-400 border-t border-[#142e5c]">
+                <strong>ヒント:</strong> これをWalkMeのソースモード等に直接コピーして貼り付けてください。
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- App Container ---
+    const App = () => {
+      const [activeTab, setActiveTab] = useState('regex');
+
+      const navItems = [
+        { id: 'regex', label: '正規表現ビルダー', icon: 'Code2' },
+        { id: 'jquery', label: 'jQuery ビルダー', icon: 'TerminalSquare' },
+        { id: 'css', label: 'CSS オプティマイザ', icon: 'Paintbrush' },
+        { id: 'bbcode', label: 'BBCode ヘルパー', icon: 'Type' },
+      ];
+
+      return (
+        <div className="flex h-screen w-full bg-[#F4F6F9] font-sans overflow-hidden">
+          <div className="w-64 bg-[#0B1E40] text-white flex flex-col flex-shrink-0">
+            <div className="h-16 flex items-center px-6 border-b border-[#1c3561]">
+              <div className="flex items-center text-xl font-bold tracking-tight">
+                <div className="w-8 h-8 bg-[#0071EB] rounded-md mr-3 flex items-center justify-center">
+                  <Icon name="Wand2" size={18} className="text-white" />
+                </div>
+                ビルダー<span className="text-[#0071EB]">ヘルパー</span>
+              </div>
+            </div>
+            
+            <nav className="flex-1 py-6 px-3 space-y-1">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">
+                WalkMe オフラインツール
+              </div>
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    activeTab === item.id 
+                      ? 'bg-[#1a3a73] text-white border-l-4 border-[#0071EB]' 
+                      : 'text-gray-300 hover:bg-[#112a57] hover:text-white border-l-4 border-transparent'
+                  }`}
+                >
+                  <Icon name={item.icon} size={20} className="mr-3" />
+                  {item.label}
+                  {activeTab === item.id && <Icon name="ChevronRight" size={16} className="ml-auto text-gray-400" />}
+                </button>
+              ))}
+            </nav>
+            
+            <div className="p-4 bg-[#07132a] text-xs text-gray-400 text-center border-t border-[#1c3561]">
+              WalkMe Builder Tools v2.0<br/>(Standalone HTML version)
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <header className="h-16 bg-white border-b border-gray-200 flex items-center px-8 flex-shrink-0 shadow-sm z-10">
+              <h1 className="text-xl font-semibold text-gray-800">
+                {navItems.find(item => item.id === activeTab)?.label}
+              </h1>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-8">
+              <div className="max-w-5xl mx-auto">
+                {activeTab === 'regex' && <RegexBuilderView />}
+                {activeTab === 'jquery' && <JQueryBuilderView />}
+                {activeTab === 'css' && <CSSOptimizerView />}
+                {activeTab === 'bbcode' && <BBCodeHelperView />}
+              </div>
+            </main>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
